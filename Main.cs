@@ -134,7 +134,7 @@ public static class Bot
             Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
 
             // Set rotating statuses
-            string[] statuses = { "No Siemano!", "Grg to cwel!", "Ale sigiemki tutaj" };
+            string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
             int index = 0;
             timer = new Timer(async _ =>
             {
@@ -198,4 +198,5 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
