@@ -5,9 +5,8 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
-using DotNetEnv;
-using Performance;
 using System.Linq;
+using Performance;
 
 public static class Bot
 {
@@ -50,7 +49,7 @@ public static class Bot
 
             if (contentLower.Contains("tubas"))
                 await HandleTubasDetection(message, user);
-            
+
             if (contentLower.Contains("co"))
                 await HandleRozkminkaDetection(message, user);
         }
@@ -65,7 +64,6 @@ public static class Bot
 
         if (kekwEmoji != null)
         {
-            string emojiString = kekwEmoji.ToString();
             if (message.Channel is SocketTextChannel textChannel)
             {
                 var botUser = textChannel.Guild.CurrentUser;
@@ -75,8 +73,8 @@ public static class Bot
                     return;
                 }
 
-                await message.Channel.SendMessageAsync(emojiString);
-                Console.WriteLine($"[XDDD SUCCESS] Sent {emojiString}");
+                await message.Channel.SendMessageAsync(kekwEmoji.ToString());
+                Console.WriteLine($"[XDDD SUCCESS] Sent {kekwEmoji}");
             }
         }
         else
@@ -98,22 +96,8 @@ public static class Bot
             return;
         }
 
-    private static async Task HandleTubasDetection(SocketMessage message, SocketGuildUser user)
-    {
-        Console.WriteLine($"[TUBAS DETECTED] from {user.Username} in #{message.Channel.Name}");
-
-        if (message.Channel is not SocketTextChannel textChannel) return;
-
-        var botUser = textChannel.Guild.CurrentUser;
-        if (!botUser.GetPermissions(textChannel).SendMessages)
-        {
-            Console.WriteLine("[TUBAS ERROR] No permission to send messages.");
-            return;
-        }
-
         try
         {
-            // ✅ FIXED: Fetch sticker object instead of using stickerIds
             var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == TubasStickerId);
             if (sticker != null)
             {
@@ -130,66 +114,70 @@ public static class Bot
             Console.WriteLine($"[TUBAS ERROR] Error sending sticker: {ex.Message}");
         }
     }
-    
-private static async Task Ready()
-{
-    try
+
+    private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
     {
-        Service = new(Client, new InteractionServiceConfig
-        {
-            UseCompiledLambda = true,
-            ThrowOnError = true
-        });
-
-        await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
-        await Service.RegisterCommandsGloballyAsync();
-
-        Client.InteractionCreated += InteractionCreated;
-        Service.SlashCommandExecuted += SlashCommandResulted;
-
-        Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
-
-        // Initial presence: 🎮 Playing 777 Slots
-        await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
-
-        // Rotating between custom statuses and "playing" state
-        string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
-        int index = 0;
-        bool showGame = false;
-
-        timer = new Timer(async _ =>
-        {
-            if (Client.ConnectionState != ConnectionState.Connected)
-                return;
-
-            try
-            {
-                if (showGame)
-                {
-                    // 🎮 Show "Playing 777 Slots"
-                    await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
-                }
-                else
-                {
-                    // 💬 Show custom status message
-                    await Client.SetCustomStatusAsync(statuses[index]);
-                    index = (index + 1) % statuses.Length;
-                }
-
-                showGame = !showGame; // Alternate between game and custom status
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[STATUS ERROR] {ex.Message}");
-            }
-
-        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20)); // every 20 seconds
+        // You can implement this later
+        Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
     }
-    catch (Exception e)
+
+    private static async Task Ready()
     {
-        Console.WriteLine(e);
+        try
+        {
+            Service = new(Client, new InteractionServiceConfig
+            {
+                UseCompiledLambda = true,
+                ThrowOnError = true
+            });
+
+            await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
+            await Service.RegisterCommandsGloballyAsync();
+
+            Client.InteractionCreated += InteractionCreated;
+            Service.SlashCommandExecuted += SlashCommandResulted;
+
+            Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
+
+            // Initial presence: 🎮 Playing 777 Slots
+            await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+
+            // Rotating statuses
+            string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
+            int index = 0;
+            bool showGame = false;
+
+            timer = new Timer(async _ =>
+            {
+                if (Client.ConnectionState != ConnectionState.Connected)
+                    return;
+
+                try
+                {
+                    if (showGame)
+                    {
+                        await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+                    }
+                    else
+                    {
+                        await Client.SetCustomStatusAsync(statuses[index]);
+                        index = (index + 1) % statuses.Length;
+                    }
+
+                    showGame = !showGame;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[STATUS ERROR] {ex.Message}");
+                }
+
+            }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
-}
 
     private static async Task InteractionCreated(SocketInteraction interaction)
     {
@@ -202,7 +190,8 @@ private static async Task Ready()
         {
             if (interaction.Type == InteractionType.ApplicationCommand)
             {
-                await interaction.GetOriginalResponseAsync().ContinueWith(async msg => await msg.Result.DeleteAsync());
+                await interaction.GetOriginalResponseAsync()
+                    .ContinueWith(async msg => await msg.Result.DeleteAsync());
             }
         }
     }
@@ -238,11 +227,3 @@ private static async Task Ready()
         return Task.CompletedTask;
     }
 }
-
-
-
-
-
-
-
-
