@@ -115,42 +115,63 @@ public static class Bot
         }
     }
 
-    private static async Task Ready()
+private static async Task Ready()
+{
+    try
     {
-        try
+        Service = new(Client, new InteractionServiceConfig
         {
-            Service = new(Client, new InteractionServiceConfig
+            UseCompiledLambda = true,
+            ThrowOnError = true
+        });
+
+        await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
+        await Service.RegisterCommandsGloballyAsync();
+
+        Client.InteractionCreated += InteractionCreated;
+        Service.SlashCommandExecuted += SlashCommandResulted;
+
+        Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
+
+        // Initial presence: 🎮 Playing 777 Slots
+        await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+
+        // Rotating between custom statuses and "playing" state
+        string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
+        int index = 0;
+        bool showGame = false;
+
+        timer = new Timer(async _ =>
+        {
+            if (Client.ConnectionState != ConnectionState.Connected)
+                return;
+
+            try
             {
-                UseCompiledLambda = true,
-                ThrowOnError = true
-            });
-
-            await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
-            await Service.RegisterCommandsGloballyAsync();
-
-            Client.InteractionCreated += InteractionCreated;
-            Service.SlashCommandExecuted += SlashCommandResulted;
-
-            Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
-
-            await Client.SetGameAsync("777 Automaty", type: ActivityType.Playing);
-            
-            // Set rotating statuses
-            string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
-            int index = 0;
-            timer = new Timer(async _ =>
-            {
-                if (Client.ConnectionState == ConnectionState.Connected)
+                if (showGame)
                 {
+                    // 🎮 Show "Playing 777 Slots"
+                    await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+                }
+                else
+                {
+                    // 💬 Show custom status message
                     await Client.SetCustomStatusAsync(statuses[index]);
                     index = (index + 1) % statuses.Length;
                 }
-            }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(16));
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-        }
+
+                showGame = !showGame; // Alternate between game and custom status
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[STATUS ERROR] {ex.Message}");
+            }
+
+        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20)); // every 20 seconds
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e);
     }
 
     private static async Task InteractionCreated(SocketInteraction interaction)
@@ -200,6 +221,7 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
 
