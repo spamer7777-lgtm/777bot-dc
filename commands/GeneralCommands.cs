@@ -16,10 +16,11 @@ namespace Commands
 
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("hi", "Say hi!")]
+        [SlashCommand("hi", "Powiedz Siemano!")]
         public async Task Hi([Summary("user", "The user to say hi to.")] IUser user)
         {
-            await RespondAsync(text: $"👋 hi {user.Mention}!");
+            await RespondAsync(text: $"👋 HEEEJ! {user.Mention}!");
         }
     }
+
 }
