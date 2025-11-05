@@ -10,8 +10,9 @@ using Performance;
 
 public static class Bot
 {
-    // ⚠️ Replace this with your actual "tubas" sticker ID
+    // ⚠️ Replace these with your actual sticker IDs
     private const ulong TubasStickerId = 1435403416733225174;
+    private const ulong RozkminkaStickerId = 1435646701137428511;
 
     public static readonly DiscordSocketClient Client = new(new DiscordSocketConfig
     {
@@ -117,8 +118,34 @@ public static class Bot
 
     private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
     {
-        // You can implement this later
         Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
+
+        if (message.Channel is not SocketTextChannel textChannel) return;
+
+        var botUser = textChannel.Guild.CurrentUser;
+        if (!botUser.GetPermissions(textChannel).SendMessages)
+        {
+            Console.WriteLine("[ROZKMINKA ERROR] No permission to send messages.");
+            return;
+        }
+
+        try
+        {
+            var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == RozkminkaStickerId);
+            if (sticker != null)
+            {
+                await textChannel.SendMessageAsync(stickers: new[] { sticker });
+                Console.WriteLine($"[ROZKMINKA SUCCESS] Sent sticker with ID: {RozkminkaStickerId}.");
+            }
+            else
+            {
+                Console.WriteLine($"[ROZKMINKA ERROR] Sticker with ID {RozkminkaStickerId} not found in this guild.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ROZKMINKA ERROR] Error sending sticker: {ex.Message}");
+        }
     }
 
     private static async Task Ready()
