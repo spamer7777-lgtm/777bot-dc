@@ -47,7 +47,7 @@ public static class Bot
 
         bool containsXddd = words.Contains("xddd");
         bool containsTubas = words.Contains("tubas");
-        bool containsRozkminka = words.Contains("co");
+        bool containsRozkminka = words.Contains("co?");
 
         int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
         if (triggerCount != 1) return;
@@ -198,4 +198,5 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
