@@ -10,7 +10,7 @@ using Performance;
 
 public static class Bot
 {
-    // ⚠️ Replace these with your actual sticker IDs
+    // ⚠️ Sticker IDs
     private const ulong TubasStickerId = 1435403416733225174;
     private const ulong RozkminkaStickerId = 1435646701137428511;
 
@@ -40,20 +40,27 @@ public static class Bot
     private static async Task MessageReceivedHandler(SocketMessage message)
     {
         if (message.Author.Id == Client.CurrentUser.Id) return;
+        if (message.Author is not SocketGuildUser user) return;
 
-        if (message.Author is SocketGuildUser user)
-        {
-            string contentLower = message.Content.ToLowerInvariant();
+        string contentLower = message.Content.ToLowerInvariant();
 
-            if (contentLower.Contains("xddd"))
-                await HandleXdddDetection(message, user);
+        bool containsXddd = contentLower.Contains("xddd");
+        bool containsTubas = contentLower.Contains("tubas");
+        bool containsRozkminka = contentLower.Contains("co");
 
-            if (contentLower.Contains("tubas"))
-                await HandleTubasDetection(message, user);
+        // Count how many triggers are detected
+        int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
 
-            if (contentLower.Contains("co"))
-                await HandleRozkminkaDetection(message, user);
-        }
+        // Only proceed if exactly one trigger matches
+        if (triggerCount != 1)
+            return;
+
+        if (containsXddd)
+            await HandleXdddDetection(message, user);
+        else if (containsTubas)
+            await HandleTubasDetection(message, user);
+        else if (containsRozkminka)
+            await HandleRozkminkaDetection(message, user);
     }
 
     private static async Task HandleXdddDetection(SocketMessage message, SocketGuildUser user)
