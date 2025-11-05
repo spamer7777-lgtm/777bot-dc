@@ -133,6 +133,8 @@ public static class Bot
 
             Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
 
+            await Client.SetGameAsync("777 Automaty", type: ActivityType.Playing);
+            
             // Set rotating statuses
             string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
             int index = 0;
@@ -198,5 +200,6 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
