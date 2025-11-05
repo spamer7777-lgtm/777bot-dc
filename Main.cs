@@ -173,6 +173,7 @@ private static async Task Ready()
     {
         Console.WriteLine(e);
     }
+}
 
     private static async Task InteractionCreated(SocketInteraction interaction)
     {
@@ -221,6 +222,7 @@ private static async Task Ready()
         return Task.CompletedTask;
     }
 }
+
 
 
 
