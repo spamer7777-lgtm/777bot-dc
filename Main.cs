@@ -156,7 +156,7 @@ public static class Bot
             }
             else
             {
-                Console.WriteLine($"[ROZKMINKA ERROR] Sticker with ID {TubasStickerId} not found in this guild.");
+                Console.WriteLine($"[ROZKMINKA ERROR] Sticker with ID {RozkminkaStickerId} not found in this guild.");
             }
         }
         catch (Exception ex)
@@ -272,6 +272,7 @@ private static async Task Ready()
         return Task.CompletedTask;
     }
 }
+
 
 
 
