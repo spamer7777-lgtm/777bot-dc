@@ -19,7 +19,7 @@ public static class Bot
     });
 
     private static InteractionService Service;
-    private static readonly string Token = "YOUR_TOKEN_HERE";
+    private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
 
     public static async Task Main()
@@ -198,3 +198,4 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
