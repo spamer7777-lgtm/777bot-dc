@@ -45,7 +45,7 @@ public static class Bot
         string contentLower = message.Content.ToLowerInvariant();
         string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-        bool containsXddd = words.Contains("xddd");
+        bool containsXddd = words.Contains("xddddd");
         bool containsTubas = words.Contains("tubas");
         bool containsRozkminka = words.Contains("co?");
 
@@ -198,5 +198,6 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
