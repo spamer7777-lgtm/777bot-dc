@@ -10,152 +10,111 @@ using Performance;
 
 public static class Bot
 {
-private const ulong TubasStickerId = 1435403416733225174;
-private const ulong RozkminkaStickerId = 1435646701137428511;
+    private const ulong TubasStickerId = 1435403416733225174;
+    private const ulong RozkminkaStickerId = 1435646701137428511;
 
-```
-public static readonly DiscordSocketClient Client = new(new DiscordSocketConfig
-{
-    GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
-});
-
-private static InteractionService Service;
-private static readonly string Token = "YOUR_TOKEN_HERE";
-private static Timer timer;
-
-public static async Task Main()
-{
-    if (Token is null)
-        throw new ArgumentException("Discord bot token not set properly.");
-
-    Client.Ready += Ready;
-    Client.Log += Log;
-    Client.MessageReceived += MessageReceivedHandler;
-
-    await Client.LoginAsync(TokenType.Bot, Token);
-    await Client.StartAsync();
-    await Task.Delay(Timeout.Infinite);
-}
-
-private static async Task MessageReceivedHandler(SocketMessage message)
-{
-    if (message.Author.Id == Client.CurrentUser.Id) return;
-    if (message.Author is not SocketGuildUser user) return;
-
-    // Ignore messages with attachments (GIFs, images, files, etc.)
-    if (message.Attachments.Any()) return;
-
-    string contentLower = message.Content.ToLowerInvariant();
-    string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
-    bool containsXddd = words.Contains("xddd");
-    bool containsTubas = words.Contains("tubas");
-    bool containsRozkminka = words.Contains("co");
-
-    // Count how many triggers are detected
-    int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
-
-    // Only proceed if exactly one trigger matches
-    if (triggerCount != 1)
-        return;
-
-    if (containsXddd)
-        await HandleXdddDetection(message, user);
-    else if (containsTubas)
-        await HandleTubasDetection(message, user);
-    else if (containsRozkminka)
-        await HandleRozkminkaDetection(message, user);
-}
-
-private static async Task HandleXdddDetection(SocketMessage message, SocketGuildUser user)
-{
-    Console.WriteLine($"[XDDD DETECTED] from {user.Username} in #{message.Channel.Name}");
-    var kekwEmoji = Client.Guilds.SelectMany(g => g.Emotes)
-        .FirstOrDefault(e => e.Name.Equals("kekw", StringComparison.OrdinalIgnoreCase));
-
-    if (kekwEmoji != null && message.Channel is SocketTextChannel textChannel)
+    public static readonly DiscordSocketClient Client = new(new DiscordSocketConfig
     {
+        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+    });
+
+    private static InteractionService Service;
+    private static readonly string Token = "YOUR_TOKEN_HERE";
+    private static Timer timer;
+
+    public static async Task Main()
+    {
+        if (Token is null)
+            throw new ArgumentException("Discord bot token not set properly.");
+
+        Client.Ready += Ready;
+        Client.Log += Log;
+        Client.MessageReceived += MessageReceivedHandler;
+
+        await Client.LoginAsync(TokenType.Bot, Token);
+        await Client.StartAsync();
+        await Task.Delay(Timeout.Infinite);
+    }
+
+    private static async Task MessageReceivedHandler(SocketMessage message)
+    {
+        if (message.Author.Id == Client.CurrentUser.Id) return;
+        if (message.Author is not SocketGuildUser user) return;
+        if (message.Attachments.Any()) return;
+
+        string contentLower = message.Content.ToLowerInvariant();
+        string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        bool containsXddd = words.Contains("xddd");
+        bool containsTubas = words.Contains("tubas");
+        bool containsRozkminka = words.Contains("co");
+
+        int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
+        if (triggerCount != 1) return;
+
+        if (containsXddd)
+            await HandleXdddDetection(message, user);
+        else if (containsTubas)
+            await HandleTubasDetection(message, user);
+        else if (containsRozkminka)
+            await HandleRozkminkaDetection(message, user);
+    }
+
+    private static async Task HandleXdddDetection(SocketMessage message, SocketGuildUser user)
+    {
+        Console.WriteLine($"[XDDD DETECTED] from {user.Username} in #{message.Channel.Name}");
+        var kekwEmoji = Client.Guilds.SelectMany(g => g.Emotes)
+            .FirstOrDefault(e => e.Name.Equals("kekw", StringComparison.OrdinalIgnoreCase));
+
+        if (kekwEmoji != null && message.Channel is SocketTextChannel textChannel)
+        {
+            var botUser = textChannel.Guild.CurrentUser;
+            if (!botUser.GetPermissions(textChannel).SendMessages) return;
+
+            await message.Channel.SendMessageAsync(kekwEmoji.ToString());
+            Console.WriteLine($"[XDDD SUCCESS] Sent {kekwEmoji}");
+        }
+    }
+
+    private static async Task HandleTubasDetection(SocketMessage message, SocketGuildUser user)
+    {
+        Console.WriteLine($"[TUBAS DETECTED] from {user.Username} in #{message.Channel.Name}");
+        if (message.Channel is not SocketTextChannel textChannel) return;
         var botUser = textChannel.Guild.CurrentUser;
-        if (!botUser.GetPermissions(textChannel).SendMessages)
+        if (!botUser.GetPermissions(textChannel).SendMessages) return;
+
+        try
         {
-            Console.WriteLine("[XDDD ERROR] No permission to send messages.");
-            return;
+            var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == TubasStickerId);
+            if (sticker != null)
+                await textChannel.SendMessageAsync(stickers: new[] { sticker });
         }
-
-        await message.Channel.SendMessageAsync(kekwEmoji.ToString());
-        Console.WriteLine($"[XDDD SUCCESS] Sent {kekwEmoji}");
-    }
-    else
-    {
-        Console.WriteLine("[XDDD WARNING] Custom emoji 'kekw' not found.");
-    }
-}
-
-private static async Task HandleTubasDetection(SocketMessage message, SocketGuildUser user)
-{
-    Console.WriteLine($"[TUBAS DETECTED] from {user.Username} in #{message.Channel.Name}");
-    if (message.Channel is not SocketTextChannel textChannel) return;
-
-    var botUser = textChannel.Guild.CurrentUser;
-    if (!botUser.GetPermissions(textChannel).SendMessages)
-    {
-        Console.WriteLine("[TUBAS ERROR] No permission to send messages.");
-        return;
-    }
-
-    try
-    {
-        var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == TubasStickerId);
-        if (sticker != null)
+        catch (Exception ex)
         {
-            await textChannel.SendMessageAsync(stickers: new[] { sticker });
-            Console.WriteLine($"[TUBAS SUCCESS] Sent sticker with ID: {TubasStickerId}.");
-        }
-        else
-        {
-            Console.WriteLine($"[TUBAS ERROR] Sticker with ID {TubasStickerId} not found in this guild.");
+            Console.WriteLine($"[TUBAS ERROR] {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[TUBAS ERROR] Error sending sticker: {ex.Message}");
-    }
-}
 
-private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
-{
-    Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
-    if (message.Channel is not SocketTextChannel textChannel) return;
-
-    var botUser = textChannel.Guild.CurrentUser;
-    if (!botUser.GetPermissions(textChannel).SendMessages)
+    private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
     {
-        Console.WriteLine("[ROZKMINKA ERROR] No permission to send messages.");
-        return;
-    }
+        Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
+        if (message.Channel is not SocketTextChannel textChannel) return;
+        var botUser = textChannel.Guild.CurrentUser;
+        if (!botUser.GetPermissions(textChannel).SendMessages) return;
 
-    try
-    {
-        var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == RozkminkaStickerId);
-        if (sticker != null)
+        try
         {
-            await textChannel.SendMessageAsync(stickers: new[] { sticker });
-            Console.WriteLine($"[ROZKMINKA SUCCESS] Sent sticker with ID: {RozkminkaStickerId}.");
+            var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == RozkminkaStickerId);
+            if (sticker != null)
+                await textChannel.SendMessageAsync(stickers: new[] { sticker });
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine($"[ROZKMINKA ERROR] Sticker with ID {RozkminkaStickerId} not found in this guild.");
+            Console.WriteLine($"[ROZKMINKA ERROR] {ex.Message}");
         }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[ROZKMINKA ERROR] Error sending sticker: {ex.Message}");
-    }
-}
 
-private static async Task Ready()
-{
-    try
+    private static async Task Ready()
     {
         Service = new(Client, new InteractionServiceConfig
         {
@@ -165,12 +124,10 @@ private static async Task Ready()
 
         await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
         await Service.RegisterCommandsGloballyAsync();
-
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
         Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
-
         await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
 
         string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
@@ -179,9 +136,7 @@ private static async Task Ready()
 
         timer = new Timer(async _ =>
         {
-            if (Client.ConnectionState != ConnectionState.Connected)
-                return;
-
+            if (Client.ConnectionState != ConnectionState.Connected) return;
             try
             {
                 if (showGame)
@@ -196,60 +151,50 @@ private static async Task Ready()
             {
                 Console.WriteLine($"[STATUS ERROR] {ex.Message}");
             }
-
         }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
     }
-    catch (Exception e)
-    {
-        Console.WriteLine(e);
-    }
-}
 
-private static async Task InteractionCreated(SocketInteraction interaction)
-{
-    try
+    private static async Task InteractionCreated(SocketInteraction interaction)
     {
-        SocketInteractionContext ctx = new(Client, interaction);
-        await Service.ExecuteCommandAsync(ctx, null);
+        try
+        {
+            var ctx = new SocketInteractionContext(Client, interaction);
+            await Service.ExecuteCommandAsync(ctx, null);
+        }
+        catch
+        {
+            if (interaction.Type == InteractionType.ApplicationCommand)
+                await interaction.GetOriginalResponseAsync()
+                    .ContinueWith(async msg => await msg.Result.DeleteAsync());
+        }
     }
-    catch
-    {
-        if (interaction.Type == InteractionType.ApplicationCommand)
-            await interaction.GetOriginalResponseAsync()
-                .ContinueWith(async msg => await msg.Result.DeleteAsync());
-    }
-}
 
-private static async Task SlashCommandResulted(SlashCommandInfo info, IInteractionContext ctx, IResult res)
-{
-    if (!res.IsSuccess)
+    private static async Task SlashCommandResulted(SlashCommandInfo info, IInteractionContext ctx, IResult res)
     {
-        await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
+        if (!res.IsSuccess)
+            await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
+        else
+        {
+            var cpuUsage = await Stats.GetCpuUsageForProcess();
+            var ramUsage = Stats.GetRamUsageForProcess();
+            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | CPU: {cpuUsage}% | RAM: {ramUsage}% | Command: {info.Name}");
+        }
     }
-    else
+
+    private static Task Log(LogMessage logMessage)
     {
-        var cpuUsage = await Stats.GetCpuUsageForProcess();
-        var ramUsage = Stats.GetRamUsageForProcess();
-        Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | CPU: {cpuUsage}% | RAM: {ramUsage}% | Command: {info.Name}");
+        Console.ForegroundColor = logMessage.Severity switch
+        {
+            LogSeverity.Critical => ConsoleColor.Red,
+            LogSeverity.Debug => ConsoleColor.Blue,
+            LogSeverity.Error => ConsoleColor.Yellow,
+            LogSeverity.Info => ConsoleColor.Cyan,
+            LogSeverity.Verbose => ConsoleColor.Green,
+            LogSeverity.Warning => ConsoleColor.Magenta,
+            _ => ConsoleColor.White,
+        };
+        Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} [{logMessage.Source}] {logMessage.Message}");
+        Console.ResetColor();
+        return Task.CompletedTask;
     }
-}
-
-private static Task Log(LogMessage logMessage)
-{
-    Console.ForegroundColor = logMessage.Severity switch
-    {
-        LogSeverity.Critical => ConsoleColor.Red,
-        LogSeverity.Debug => ConsoleColor.Blue,
-        LogSeverity.Error => ConsoleColor.Yellow,
-        LogSeverity.Info => ConsoleColor.Cyan,
-        LogSeverity.Verbose => ConsoleColor.Green,
-        LogSeverity.Warning => ConsoleColor.Magenta,
-        _ => ConsoleColor.White,
-    };
-    Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} [{logMessage.Source}] {logMessage.Message}");
-    Console.ResetColor();
-    return Task.CompletedTask;
-}
-```
-
 }
