@@ -13,7 +13,6 @@ public static class Bot
 {
     // ⚠️ Replace this with your actual "tubas" sticker ID
     private const ulong TubasStickerId = 1435403416733225174;
-    private const ulong RozkminkaStickerId = 1435646701137428511;
 
     public static readonly DiscordSocketClient Client = new(new DiscordSocketConfig
     {
@@ -99,19 +98,19 @@ public static class Bot
             return;
         }
 
-    private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
+    private static async Task HandleTubasDetection(SocketMessage message, SocketGuildUser user)
     {
-        Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
+        Console.WriteLine($"[TUBAS DETECTED] from {user.Username} in #{message.Channel.Name}");
 
         if (message.Channel is not SocketTextChannel textChannel) return;
 
         var botUser = textChannel.Guild.CurrentUser;
         if (!botUser.GetPermissions(textChannel).SendMessages)
         {
-            Console.WriteLine("[ROZKMINKA ERROR] No permission to send messages.");
+            Console.WriteLine("[TUBAS ERROR] No permission to send messages.");
             return;
         }
-        
+
         try
         {
             // ✅ FIXED: Fetch sticker object instead of using stickerIds
@@ -129,39 +128,6 @@ public static class Bot
         catch (Exception ex)
         {
             Console.WriteLine($"[TUBAS ERROR] Error sending sticker: {ex.Message}");
-        }
-    }
-    
-    private static async Task HandleRozkminkaDetection(SocketMessage message, SocketGuildUser user)
-    {
-        Console.WriteLine($"[ROZKMINKA DETECTED] from {user.Username} in #{message.Channel.Name}");
-
-        if (message.Channel is not SocketTextChannel textChannel) return;
-
-        var botUser = textChannel.Guild.CurrentUser;
-        if (!botUser.GetPermissions(textChannel).SendMessages)
-        {
-            Console.WriteLine("[ROZKMINKA ERROR] No permission to send messages.");
-            return;
-        }
-
-        try
-        {
-            // ✅ FIXED: Fetch sticker object instead of using stickerIds
-            var sticker = textChannel.Guild.Stickers.FirstOrDefault(s => s.Id == RozkminkaStickerId);
-            if (sticker != null)
-            {
-                await textChannel.SendMessageAsync(stickers: new[] { sticker });
-                Console.WriteLine($"[ROZKMINKA SUCCESS] Sent sticker with ID: {RozkminkaStickerId}.");
-            }
-            else
-            {
-                Console.WriteLine($"[ROZKMINKA ERROR] Sticker with ID {RozkminkaStickerId} not found in this guild.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ROZKMINKA ERROR] Error sending sticker: {ex.Message}");
         }
     }
     
@@ -272,6 +238,7 @@ private static async Task Ready()
         return Task.CompletedTask;
     }
 }
+
 
 
 
