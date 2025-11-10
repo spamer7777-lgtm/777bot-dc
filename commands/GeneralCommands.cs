@@ -88,7 +88,7 @@ public async Task Slots()
         var effect2 = effects[rand.Next(effects.Length)];
 
         embed = new EmbedBuilder()
-            .WithTitle($"🎰 777 Slots 🎰 {effect1}")
+            .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
             .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
             .WithColor(Color.DarkGrey)
             .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
@@ -153,6 +153,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
