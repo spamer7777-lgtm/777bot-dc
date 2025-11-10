@@ -49,13 +49,8 @@ public async Task Slots()
     const int cost = 10;
     const int reward = 50;
 
-    // Safely get or create the user
-    var user = UserDataManager.GetUser(Context.User.Id);
-    if (user == null)
-    {
-        UserDataManager.CreateUser(Context.User.Id); // Make sure a new user can be created
-        user = UserDataManager.GetUser(Context.User.Id);
-    }
+    // Get or create the user safely
+    var user = UserDataManager.GetOrCreateUser(Context.User.Id);
 
     if (user.Credits < cost)
     {
@@ -96,7 +91,7 @@ public async Task Slots()
             .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
             .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
             .WithColor(Color.DarkGrey)
-            .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+            .WithFooter($"Twój nowy balans: {UserDataManager.GetOrCreateUser(Context.User.Id).Credits} kredytów")
             .Build();
 
         await msg.ModifyAsync(m => m.Embed = embed);
@@ -117,7 +112,7 @@ public async Task Slots()
                          (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
                                 $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
         .WithColor(win ? Color.Gold : Color.DarkGrey)
-        .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+        .WithFooter($"Twój nowy balans: {UserDataManager.GetOrCreateUser(Context.User.Id).Credits} kredytów")
         .Build();
 
     await msg.ModifyAsync(m => m.Embed = embed);
@@ -158,6 +153,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
