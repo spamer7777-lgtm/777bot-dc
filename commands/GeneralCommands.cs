@@ -62,8 +62,9 @@ public async Task Slots()
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
     var rand = new Random();
 
-    // Send initial "spinning" message
-    var msg = await RespondAsync("🎰 | [⬜][⬜][⬜] Kręcimy...");
+    // Send initial spinning message
+    var msg = await FollowupAsync("🎰 | [⬜][⬜][⬜] Kręcimy...", ephemeral: false) as IUserMessage;
+    if (msg == null) return; // Safety check
 
     // Animate reels 5 times (~2 seconds)
     for (int i = 0; i < 5; i++)
@@ -87,12 +88,13 @@ public async Task Slots()
 
     string resultText = $"🎰 | [{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
                         (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!");
+                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem odda...");
 
     // Update message with final result and balance
     await msg.ModifyAsync(m => m.Content = resultText +
         $"\n💳 Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów");
 }
+
 
 
         // 🛠️ Hidden Admin Command
@@ -128,5 +130,6 @@ public async Task Slots()
         }
     }
 }
+
 
 
