@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
+using Discord.WebSocket;
 
 namespace Commands
 {
@@ -84,7 +85,6 @@ namespace Commands
         [DefaultMemberPermissions(GuildPermission.Administrator)] // require admin permission
         [CommandContextType(InteractionContextType.Guild)] // guild only
         [IntegrationType(ApplicationIntegrationType.GuildInstall)] // local command, not global
-        [EnabledInDm(false)] // disable in DMs
         public async Task GrantCredits(
             [Summary("user", "The user to give credits to.")] IUser target,
             [Summary("amount", "The amount of credits to add.")] int amount)
@@ -113,3 +113,4 @@ namespace Commands
         }
     }
 }
+
