@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 public static class ChatGPTService
 {
-    private static readonly OpenAIClient client = new OpenAIClient("YOUR_OPENAI_API_KEY");
+    private static readonly OpenAIClient client = new OpenAIClient("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");
 
     public static async Task<string> AskAsync(string prompt)
     {
