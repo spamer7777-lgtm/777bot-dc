@@ -43,14 +43,14 @@ namespace Commands
 [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 [SlashCommand("slots", "Sprawdź swoje szczęście")]
-[DefaultMemberPermissions(GuildPermission.SendMessages)] // Allows all users to use it
+[DefaultMemberPermissions(GuildPermission.SendMessages)] // All users can run
 public async Task Slots()
 {
     const int cost = 10;
     const int reward = 50;
 
-    // Get or create the user safely
-    var user = UserDataManager.GetOrCreateUser(Context.User.Id);
+    // Get user (auto-creates if not exist)
+    var user = UserDataManager.GetUser(Context.User.Id);
 
     if (user.Credits < cost)
     {
@@ -91,7 +91,7 @@ public async Task Slots()
             .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
             .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
             .WithColor(Color.DarkGrey)
-            .WithFooter($"Twój nowy balans: {UserDataManager.GetOrCreateUser(Context.User.Id).Credits} kredytów")
+            .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
             .Build();
 
         await msg.ModifyAsync(m => m.Embed = embed);
@@ -112,13 +112,11 @@ public async Task Slots()
                          (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
                                 $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
         .WithColor(win ? Color.Gold : Color.DarkGrey)
-        .WithFooter($"Twój nowy balans: {UserDataManager.GetOrCreateUser(Context.User.Id).Credits} kredytów")
+        .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
         .Build();
 
     await msg.ModifyAsync(m => m.Embed = embed);
 }
-
-
 
         // 🛠️ Hidden Admin Command
         [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
@@ -153,6 +151,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
