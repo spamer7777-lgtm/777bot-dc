@@ -24,29 +24,59 @@ namespace Commands
             await RespondAsync(text: $"👋 HEEEJ! {user.Mention}!");
         }
 
-        // 🎰 New Slots command
+        // 💰 Show balance command
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("slots", "Try your luck at 777 Slots!")]
+        [SlashCommand("balance", "Check your current credits.")]
+        public async Task Balance()
+        {
+            var user = UserDataManager.GetUser(Context.User.Id);
+            var embed = new EmbedBuilder()
+                .WithTitle($"💰 {Context.User.Username}'s Balance")
+                .WithDescription($"You have **{user.Credits}** credits.")
+                .WithColor(Color.Gold)
+                .Build();
+
+            await RespondAsync(embed: embed);
+        }
+
+        // 🎰 Slots command with credit system
+        [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
+        [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+        [SlashCommand("slots", "Sprawdz swoje szczescie, zakręc jednorękim bandytą!")]
         public async Task Slots()
         {
+            const int cost = 10;
+            const int reward = 50;
+
+            var user = UserDataManager.GetUser(Context.User.Id);
+
+            if (user.Credits < cost)
+            {
+                await RespondAsync($"🚫 Potrzebujesz {cost} kredtyów żeby zagrać. W tym momencie masz {user.Credits}.");
+                return;
+            }
+
+            // Deduct the cost
+            UserDataManager.RemoveCredits(Context.User.Id, cost);
+
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
             var rand = new Random();
-
-            // Generate 3 random slot symbols
-            var result = Enumerable.Range(0, 3)
-                .Select(_ => icons[rand.Next(icons.Length)])
-                .ToArray();
+            var result = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
 
             string output = string.Join(" ", result);
             bool win = result.Distinct().Count() == 1;
 
+            if (win)
+                UserDataManager.AddCredits(Context.User.Id, reward);
+
             var embed = new EmbedBuilder()
                 .WithTitle("🎰 777 Slots 🎰")
                 .WithDescription($"**{output}**\n" +
-                                 (win ? "💰 **JACKPOT! WYGRAŁEŚ/AŚ!**" : "😢 Następnym razem odda..."))
+                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
+                                         $"😢 Straciłeś/aś {cost} kredtyów. następnym razem napewno odda..."))
                 .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Played by {Context.User.Username}", Context.User.GetAvatarUrl())
+                .WithFooter($"Your new balance: {UserDataManager.GetUser(Context.User.Id).Credits} credits")
                 .Build();
 
             await RespondAsync(embed: embed);
