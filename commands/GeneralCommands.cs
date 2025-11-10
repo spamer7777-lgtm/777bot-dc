@@ -27,13 +27,13 @@ namespace Commands
         // 💰 Show balance command
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("balance", "Check your current credits.")]
+        [SlashCommand("balance", "Sprawdź ile masz kredytów.")]
         public async Task Balance()
         {
             var user = UserDataManager.GetUser(Context.User.Id);
             var embed = new EmbedBuilder()
-                .WithTitle($"💰 {Context.User.Username}'s Balance")
-                .WithDescription($"You have **{user.Credits}** credits.")
+                .WithTitle($"Balans💰 {Context.User.Username}")
+                .WithDescription($"Masz **{user.Credits}** kredytów.")
                 .WithColor(Color.Gold)
                 .Build();
 
@@ -74,12 +74,13 @@ namespace Commands
                 .WithTitle("🎰 777 Slots 🎰")
                 .WithDescription($"**{output}**\n" +
                                  (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                                         $"😢 Straciłeś/aś {cost} kredtyów. następnym razem napewno odda..."))
+                                         $"😢 Straciłeś/aś {cost} kredtyów. Następnym razem napewno odda..."))
                 .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Your new balance: {UserDataManager.GetUser(Context.User.Id).Credits} credits")
+                .WithFooter($"Posiadasz: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
                 .Build();
 
             await RespondAsync(embed: embed);
         }
     }
 }
+
