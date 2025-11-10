@@ -62,7 +62,7 @@ public async Task Slots()
     UserDataManager.RemoveCredits(Context.User.Id, cost);
 
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
-    string[] effects = { "🔔", "✨", "💥", "🎵" }; // sound/flash effects during spin
+    string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" }; // more flashy effects
     var rand = new Random();
 
     // Initial embed
@@ -76,23 +76,26 @@ public async Task Slots()
     var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
     if (msg == null) return;
 
-    // Animate reels 5 times
-    for (int i = 0; i < 5; i++)
+    // Animate reels 6 times (~1.5 seconds) for faster spinning
+    for (int i = 0; i < 6; i++)
     {
         var spin = Enumerable.Range(0, 3)
             .Select(_ => icons[rand.Next(icons.Length)])
             .ToArray();
 
-        var effect = effects[rand.Next(effects.Length)]; // pick a random effect
+        // Pick 2 random effects per spin for extra flashiness
+        var effect1 = effects[rand.Next(effects.Length)];
+        var effect2 = effects[rand.Next(effects.Length)];
+
         embed = new EmbedBuilder()
-            .WithTitle($"🎰 777 Slots 🎰 {effect}")
+            .WithTitle($"🎰 777 Slots 🎰 {effect1}{effect2}")
             .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
             .WithColor(Color.DarkGrey)
             .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
             .Build();
 
         await msg.ModifyAsync(m => m.Embed = embed);
-        await Task.Delay(400);
+        await Task.Delay(250); // faster spin
     }
 
     // Final result
@@ -114,6 +117,7 @@ public async Task Slots()
 
     await msg.ModifyAsync(m => m.Embed = embed);
 }
+
 
 
         // 🛠️ Hidden Admin Command
@@ -149,6 +153,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
