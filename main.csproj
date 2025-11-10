@@ -11,9 +11,13 @@
     
     <!-- FIX NU1604: Explicitly specify a version range for DotNetEnv. -->
     <PackageReference Include="DotNetEnv" Version="[2.5.0,)" />
+
+    <!-- OpenAI SDK for ChatGPT integration -->
+    <PackageReference Include="OpenAI" Version="1.5.1" />
     
     <!-- FIX NU1701: Removed legacy .NET Framework packages (Microsoft.Net.Http and Microsoft.Bcl references are included in Discord.Net). -->
     <!-- Your .NET 6.0 project does not need these legacy dependencies. -->
   </ItemGroup>
+
 
 </Project>
