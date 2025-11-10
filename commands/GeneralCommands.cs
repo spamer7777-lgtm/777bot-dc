@@ -43,12 +43,19 @@ namespace Commands
 [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 [SlashCommand("slots", "Sprawdź swoje szczęście")]
+[DefaultMemberPermissions(GuildPermission.SendMessages)] // Allows all users to use it
 public async Task Slots()
 {
     const int cost = 10;
     const int reward = 50;
 
+    // Safely get or create the user
     var user = UserDataManager.GetUser(Context.User.Id);
+    if (user == null)
+    {
+        UserDataManager.CreateUser(Context.User.Id); // Make sure a new user can be created
+        user = UserDataManager.GetUser(Context.User.Id);
+    }
 
     if (user.Credits < cost)
     {
@@ -56,16 +63,15 @@ public async Task Slots()
         return;
     }
 
-    // Defer the response to avoid timeout
+    // Defer response to avoid timeout
     await DeferAsync();
 
     UserDataManager.RemoveCredits(Context.User.Id, cost);
 
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
-    string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" }; // more flashy effects
+    string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
     var rand = new Random();
 
-    // Initial embed
     var embed = new EmbedBuilder()
         .WithTitle("🎰 777 Slots 🎰")
         .WithDescription("[⬜][⬜][⬜] Kręcimy...")
@@ -76,14 +82,13 @@ public async Task Slots()
     var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
     if (msg == null) return;
 
-    // Animate reels 6 times (~1.5 seconds) for faster spinning
+    // Animate reels 6 times
     for (int i = 0; i < 6; i++)
     {
         var spin = Enumerable.Range(0, 3)
             .Select(_ => icons[rand.Next(icons.Length)])
             .ToArray();
 
-        // Pick 2 random effects per spin for extra flashiness
         var effect1 = effects[rand.Next(effects.Length)];
         var effect2 = effects[rand.Next(effects.Length)];
 
@@ -95,10 +100,10 @@ public async Task Slots()
             .Build();
 
         await msg.ModifyAsync(m => m.Embed = embed);
-        await Task.Delay(250); // faster spin
+        await Task.Delay(250);
     }
 
-    // Final result
+    // Final spin
     var finalResult = Enumerable.Range(0, 3)
         .Select(_ => icons[rand.Next(icons.Length)])
         .ToArray();
@@ -153,6 +158,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
