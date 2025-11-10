@@ -24,26 +24,24 @@ namespace Commands
             await RespondAsync(text: $"👋 HEEEJ! {user.Mention}!");
         }
 
-        // 💰 Show balance command
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("balance", "Sprawdź ile masz kredytów.")]
+        [SlashCommand("balance", "Check your current credits.")]
         public async Task Balance()
         {
             var user = UserDataManager.GetUser(Context.User.Id);
             var embed = new EmbedBuilder()
-                .WithTitle($"Balans💰 {Context.User.Username}")
-                .WithDescription($"Masz **{user.Credits}** kredytów.")
+                .WithTitle($"Balans: 💰 {Context.User.Username}")
+                .WithDescription($"Masz **{user.Credits}** kredtyów.")
                 .WithColor(Color.Gold)
                 .Build();
 
             await RespondAsync(embed: embed);
         }
 
-        // 🎰 Slots command with credit system
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("slots", "Sprawdz swoje szczescie, zakręc jednorękim bandytą!")]
+        [SlashCommand("slots", "Sprawdź swoje szczęście")]
         public async Task Slots()
         {
             const int cost = 10;
@@ -53,11 +51,10 @@ namespace Commands
 
             if (user.Credits < cost)
             {
-                await RespondAsync($"🚫 Potrzebujesz {cost} kredtyów żeby zagrać. W tym momencie masz {user.Credits}.");
+                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów zeby zagrać. Akctualnie masz ich: {user.Credits}.");
                 return;
             }
 
-            // Deduct the cost
             UserDataManager.RemoveCredits(Context.User.Id, cost);
 
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
@@ -73,16 +70,16 @@ namespace Commands
             var embed = new EmbedBuilder()
                 .WithTitle("🎰 777 Slots 🎰")
                 .WithDescription($"**{output}**\n" +
-                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                                         $"😢 Straciłeś/aś {cost} kredtyów. Następnym razem napewno odda..."))
+                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredtyów!**" :
+                                         $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem odda..."))
                 .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Posiadasz: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+                .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredtyów")
                 .Build();
 
             await RespondAsync(embed: embed);
         }
 
-             // 🛠️ Hidden Admin Command
+        // 🛠️ Hidden Admin Command
         [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)] // require admin permission
         [CommandContextType(InteractionContextType.Guild)] // guild only
@@ -113,6 +110,6 @@ namespace Commands
                 $"✅ Added **{amount}** credits to {target.Mention}. New balance: **{newBalance}** credits.",
                 ephemeral: true // hidden response
             );
-       }
+        }
+    }
 }
-
