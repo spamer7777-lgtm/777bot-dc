@@ -40,8 +40,6 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-[CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
-[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 [SlashCommand("slots", "Sprawdź swoje szczęście")]
 public async Task Slots()
 {
@@ -56,17 +54,19 @@ public async Task Slots()
         return;
     }
 
-    // Deduct cost
+    // Immediately defer the response
+    await DeferAsync();
+
     UserDataManager.RemoveCredits(Context.User.Id, cost);
 
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
     var rand = new Random();
 
-    // Send initial spinning message
+    // Send initial spinning message (edits the deferred response)
     var msg = await FollowupAsync("🎰 | [⬜][⬜][⬜] Kręcimy...", ephemeral: false) as IUserMessage;
-    if (msg == null) return; // Safety check
+    if (msg == null) return;
 
-    // Animate reels 5 times (~2 seconds)
+    // Emoji animation
     for (int i = 0; i < 5; i++)
     {
         var spin = Enumerable.Range(0, 3)
@@ -88,9 +88,8 @@ public async Task Slots()
 
     string resultText = $"🎰 | [{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
                         (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem odda...");
+                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!");
 
-    // Update message with final result and balance
     await msg.ModifyAsync(m => m.Content = resultText +
         $"\n💳 Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów");
 }
@@ -130,6 +129,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
