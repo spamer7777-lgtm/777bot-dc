@@ -40,45 +40,60 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
-        [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("slots", "Sprawdź swoje szczęście")]
-        public async Task Slots()
-        {
-            const int cost = 10;
-            const int reward = 50;
+[CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
+[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+[SlashCommand("slots", "Sprawdź swoje szczęście")]
+public async Task Slots()
+{
+    const int cost = 10;
+    const int reward = 50;
 
-            var user = UserDataManager.GetUser(Context.User.Id);
+    var user = UserDataManager.GetUser(Context.User.Id);
 
-            if (user.Credits < cost)
-            {
-                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów zeby zagrać. Akctualnie masz ich: {user.Credits}.");
-                return;
-            }
+    if (user.Credits < cost)
+    {
+        await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Aktualnie masz ich: {user.Credits}.");
+        return;
+    }
 
-            UserDataManager.RemoveCredits(Context.User.Id, cost);
+    // Deduct cost
+    UserDataManager.RemoveCredits(Context.User.Id, cost);
 
-            string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
-            var rand = new Random();
-            var result = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
+    string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
+    var rand = new Random();
 
-            string output = string.Join(" ", result);
-            bool win = result.Distinct().Count() == 1;
+    // Send initial "spinning" message
+    var msg = await RespondAsync("🎰 | [⬜][⬜][⬜] Kręcimy...");
 
-            if (win)
-                UserDataManager.AddCredits(Context.User.Id, reward);
+    // Animate reels 5 times (~2 seconds)
+    for (int i = 0; i < 5; i++)
+    {
+        var spin = Enumerable.Range(0, 3)
+            .Select(_ => icons[rand.Next(icons.Length)])
+            .ToArray();
 
-            var embed = new EmbedBuilder()
-                .WithTitle("🎰 777 Slots 🎰")
-                .WithDescription($"**{output}**\n" +
-                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredtyów!**" :
-                                         $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem odda..."))
-                .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredtyów")
-                .Build();
+        string spinContent = $"🎰 | [{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...";
+        await msg.ModifyAsync(m => m.Content = spinContent);
+        await Task.Delay(400);
+    }
 
-            await RespondAsync(embed: embed);
-        }
+    // Final result
+    var finalResult = Enumerable.Range(0, 3)
+        .Select(_ => icons[rand.Next(icons.Length)])
+        .ToArray();
+
+    bool win = finalResult.Distinct().Count() == 1;
+    if (win) UserDataManager.AddCredits(Context.User.Id, reward);
+
+    string resultText = $"🎰 | [{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
+                        (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
+                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!");
+
+    // Update message with final result and balance
+    await msg.ModifyAsync(m => m.Content = resultText +
+        $"\n💳 Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów");
+}
+
 
         // 🛠️ Hidden Admin Command
         [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
@@ -113,4 +128,5 @@ namespace Commands
         }
     }
 }
+
 
