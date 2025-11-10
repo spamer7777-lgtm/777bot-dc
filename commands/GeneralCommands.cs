@@ -62,9 +62,10 @@ public async Task Slots()
     UserDataManager.RemoveCredits(Context.User.Id, cost);
 
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
+    string[] effects = { "🔔", "✨", "💥", "🎵" }; // sound/flash effects during spin
     var rand = new Random();
 
-    // Create initial embed
+    // Initial embed
     var embed = new EmbedBuilder()
         .WithTitle("🎰 777 Slots 🎰")
         .WithDescription("[⬜][⬜][⬜] Kręcimy...")
@@ -82,8 +83,9 @@ public async Task Slots()
             .Select(_ => icons[rand.Next(icons.Length)])
             .ToArray();
 
+        var effect = effects[rand.Next(effects.Length)]; // pick a random effect
         embed = new EmbedBuilder()
-            .WithTitle("🎰 777 Slots 🎰")
+            .WithTitle($"🎰 777 Slots 🎰 {effect}")
             .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
             .WithColor(Color.DarkGrey)
             .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
@@ -112,6 +114,7 @@ public async Task Slots()
 
     await msg.ModifyAsync(m => m.Embed = embed);
 }
+
 
         // 🛠️ Hidden Admin Command
         [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
@@ -146,6 +149,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
