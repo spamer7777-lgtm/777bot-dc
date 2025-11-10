@@ -40,6 +40,8 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
+[CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
+[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
 [SlashCommand("slots", "Sprawdź swoje szczęście")]
 public async Task Slots()
 {
@@ -54,7 +56,7 @@ public async Task Slots()
         return;
     }
 
-    // Immediately defer the response
+    // Defer the response to avoid timeout
     await DeferAsync();
 
     UserDataManager.RemoveCredits(Context.User.Id, cost);
@@ -62,19 +64,32 @@ public async Task Slots()
     string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
     var rand = new Random();
 
-    // Send initial spinning message (edits the deferred response)
-    var msg = await FollowupAsync("🎰 | [⬜][⬜][⬜] Kręcimy...", ephemeral: false) as IUserMessage;
+    // Create initial embed
+    var embed = new EmbedBuilder()
+        .WithTitle("🎰 777 Slots 🎰")
+        .WithDescription("[⬜][⬜][⬜] Kręcimy...")
+        .WithColor(Color.DarkGrey)
+        .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
+        .Build();
+
+    var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
     if (msg == null) return;
 
-    // Emoji animation
+    // Animate reels 5 times
     for (int i = 0; i < 5; i++)
     {
         var spin = Enumerable.Range(0, 3)
             .Select(_ => icons[rand.Next(icons.Length)])
             .ToArray();
 
-        string spinContent = $"🎰 | [{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...";
-        await msg.ModifyAsync(m => m.Content = spinContent);
+        embed = new EmbedBuilder()
+            .WithTitle("🎰 777 Slots 🎰")
+            .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
+            .WithColor(Color.DarkGrey)
+            .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+            .Build();
+
+        await msg.ModifyAsync(m => m.Embed = embed);
         await Task.Delay(400);
     }
 
@@ -86,15 +101,17 @@ public async Task Slots()
     bool win = finalResult.Distinct().Count() == 1;
     if (win) UserDataManager.AddCredits(Context.User.Id, reward);
 
-    string resultText = $"🎰 | [{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
-                        (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                               $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!");
+    embed = new EmbedBuilder()
+        .WithTitle("🎰 777 Slots 🎰")
+        .WithDescription($"[{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
+                         (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
+                                $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
+        .WithColor(win ? Color.Gold : Color.DarkGrey)
+        .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+        .Build();
 
-    await msg.ModifyAsync(m => m.Content = resultText +
-        $"\n💳 Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów");
+    await msg.ModifyAsync(m => m.Embed = embed);
 }
-
-
 
         // 🛠️ Hidden Admin Command
         [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
@@ -129,6 +146,7 @@ public async Task Slots()
         }
     }
 }
+
 
 
 
