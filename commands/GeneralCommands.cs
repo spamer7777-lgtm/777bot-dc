@@ -81,6 +81,38 @@ namespace Commands
 
             await RespondAsync(embed: embed);
         }
-    }
+
+             // 🛠️ Hidden Admin Command
+        [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)] // require admin permission
+        [CommandContextType(InteractionContextType.Guild)] // guild only
+        [IntegrationType(ApplicationIntegrationType.GuildInstall)] // local command, not global
+        [EnabledInDm(false)] // disable in DMs
+        public async Task GrantCredits(
+            [Summary("user", "The user to give credits to.")] IUser target,
+            [Summary("amount", "The amount of credits to add.")] int amount)
+        {
+            // optional: restrict by specific user ID
+            ulong ownerId = 299929951451217921; // 🔒 your Discord ID here
+            if (Context.User.Id != ownerId && !((SocketGuildUser)Context.User).GuildPermissions.Administrator)
+            {
+                await RespondAsync("🚫 You are not authorized to use this command.", ephemeral: true);
+                return;
+            }
+
+            if (amount <= 0)
+            {
+                await RespondAsync("⚠️ Amount must be greater than 0.", ephemeral: true);
+                return;
+            }
+
+            UserDataManager.AddCredits(target.Id, amount);
+            var newBalance = UserDataManager.GetUser(target.Id).Credits;
+
+            await RespondAsync(
+                $"✅ Added **{amount}** credits to {target.Mention}. New balance: **{newBalance}** credits.",
+                ephemeral: true // hidden response
+            );
+       }
 }
 
