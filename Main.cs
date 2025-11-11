@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using Performance;
 
 public static class Bot
@@ -21,6 +23,23 @@ public static class Bot
     private static InteractionService Service;
     private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
+
+    // 🟢 Nowy globalny HttpClient z poprawnymi nagłówkami
+    public static readonly HttpClient Http = new HttpClient(new HttpClientHandler
+    {
+        AllowAutoRedirect = true,
+        UseProxy = true
+    })
+    {
+        Timeout = TimeSpan.FromSeconds(10)
+    };
+
+    // 🟢 Statyczny konstruktor — dodaje nagłówki
+    static Bot()
+    {
+        Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DiscordBot/1.0");
+        Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    }
 
     public static async Task Main()
     {
@@ -198,6 +217,3 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
-
-
-
