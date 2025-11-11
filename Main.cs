@@ -2,13 +2,14 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using System;
-using System.Reflection;
-using System.Threading.Tasks;
-using System.Threading;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Performance;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Hosting;
 
 public static class Bot
 {
@@ -24,17 +25,12 @@ public static class Bot
     private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
 
-    // 🟢 Nowy globalny HttpClient z poprawnymi nagłówkami
-    public static readonly HttpClient Http = new HttpClient(new HttpClientHandler
-    {
-        AllowAutoRedirect = true,
-        UseProxy = true
-    })
+    // Globalny HttpClient do API
+    public static readonly HttpClient Http = new HttpClient()
     {
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    // 🟢 Statyczny konstruktor — dodaje nagłówki
     static Bot()
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DiscordBot/1.0");
@@ -46,6 +42,9 @@ public static class Bot
         if (Token is null)
             throw new ArgumentException("Discord bot token not set properly.");
 
+        // Uruchamiamy proxy w tle
+        _ = Task.Run(() => RunProxyServer());
+
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
@@ -53,6 +52,36 @@ public static class Bot
         await Client.LoginAsync(TokenType.Bot, Token);
         await Client.StartAsync();
         await Task.Delay(Timeout.Infinite);
+    }
+
+    private static void RunProxyServer()
+    {
+        var builder = WebApplication.CreateBuilder();
+        var app = builder.Build();
+
+        app.MapGet("/radio", async () =>
+        {
+            try
+            {
+                string apiUrl = "https://radio.projectrpg.pl/statsv2";
+                var request = new HttpRequestMessage(HttpMethod.Get, apiUrl);
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/127.0.0.1");
+                request.Headers.Add("Accept", "application/json");
+                request.Headers.Add("Referer", "https://radio.projectrpg.pl/");
+                request.Headers.Add("Origin", "https://radio.projectrpg.pl");
+
+                var response = await Http.SendAsync(request);
+                var json = await response.Content.ReadAsStringAsync();
+                return Results.Content(json, "application/json");
+            }
+            catch (Exception ex)
+            {
+                return Results.Problem(ex.Message);
+            }
+        });
+
+        string port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+        app.Run($"http://0.0.0.0:{port}");
     }
 
     private static async Task MessageReceivedHandler(SocketMessage message)
