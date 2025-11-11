@@ -130,7 +130,7 @@ public async Task Odsłuch()
     try
     {
         // 🔹 Zmień na swój proxy URL
-        string url = "https://twojadomena.pl/radio.php";
+        string url = "https://777bot.free.nf/radio.php";
 
         var response = await Bot.Http.GetAsync(url);
         if (!response.IsSuccessStatusCode)
@@ -206,6 +206,7 @@ public async Task Odsłuch()
         }
     }
 }
+
 
 
 
