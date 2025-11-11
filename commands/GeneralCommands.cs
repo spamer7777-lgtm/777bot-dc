@@ -122,61 +122,45 @@ namespace Commands
 
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
 [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-[SlashCommand("odsluch", "Sprawdź kto aktualnie nadaje na ProjectFM")]
-public async Task Odsluch()
+[SlashCommand("odsluch", "Sprawdź kto aktualnie nadaje i ilu jest słuchaczy.")]
+public async Task Odsłuch()
 {
-    await DeferAsync();
+    const string url = "https://radio.projectrpg.pl/statsv2";
 
     try
     {
-        string url = "https://radio.projectrpg.pl/statsv2";
-
-        // 🧠 Custom HTTP Request with browser-like headers
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-        request.Headers.Add("Accept", "application/json, text/plain, */*");
-
-        var response = await http.SendAsync(request);
+        using var response = await Bot.Http.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
-            await FollowupAsync($"⚠️ Nie udało się pobrać danych z API. Kod błędu: **{(int)response.StatusCode} {response.ReasonPhrase}**", ephemeral: true);
+            await RespondAsync($"❌ Nie udało się pobrać danych z API. Kod błędu: {response.StatusCode}");
             return;
         }
 
-        string json = await response.Content.ReadAsStringAsync();
-
-        using var doc = JsonDocument.Parse(json);
+        var json = await response.Content.ReadAsStringAsync();
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        string streamer = root.GetProperty("live").GetProperty("streamer_name").GetString() ?? "Brak danych";
-        bool isLive = root.GetProperty("live").GetProperty("is_live").GetBoolean();
-        int uniqueListeners = root.GetProperty("listeners").GetProperty("unique").GetInt32();
-        int totalListeners = root.GetProperty("listeners").GetProperty("total").GetInt32();
-        string listenUrl = root.GetProperty("station").GetProperty("listen_url").GetString() ?? "https://radio.projectrpg.pl";
+        var live = root.GetProperty("live");
+        bool isLive = live.GetProperty("is_live").GetBoolean();
+        string streamer = isLive ? live.GetProperty("streamer_name").GetString() ?? "Nieznany" : "Offline";
+
+        var listeners = root.GetProperty("listeners");
+        int uniqueListeners = listeners.GetProperty("unique").GetInt32();
 
         var embed = new EmbedBuilder()
-            .WithTitle("📻 ProjectFM - Odsłuch na żywo")
+            .WithTitle("📻 ProjectFM – Status")
             .WithDescription(isLive
-                ? $"🎙️ **Aktualnie nadaje:** `{streamer}`\n👥 **Unikalni słuchacze:** `{uniqueListeners}`\n🔊 **Łączna liczba słuchaczy:** `{totalListeners}`"
+                ? $"🎙️ **Na żywo:** `{streamer}`\n👥 **Unikalnych słuchaczy:** `{uniqueListeners}`"
                 : "🚫 Aktualnie nikt nie nadaje.")
-            .WithColor(isLive ? Color.Green : Color.DarkGrey)
-            .AddField("🔗 Link do odsłuchu", $"[Kliknij, aby słuchać]({listenUrl})")
-            .WithFooter("Dane pochodzą z radio.projectrpg.pl")
+            .WithColor(isLive ? Color.Green : Color.Red)
             .WithCurrentTimestamp()
             .Build();
 
-        await FollowupAsync(embed: embed, ephemeral: false);
+        await RespondAsync(embed: embed);
     }
     catch (Exception ex)
     {
-        var errorEmbed = new EmbedBuilder()
-            .WithTitle("❌ Błąd")
-            .WithDescription("Nie udało się pobrać danych z API radia.")
-            .WithColor(Color.Red)
-            .WithFooter(ex.Message)
-            .Build();
-
-        await FollowupAsync(embed: errorEmbed, ephemeral: true);
+        await RespondAsync($"⚠️ Błąd przy pobieraniu danych: {ex.Message}");
     }
 }
 
@@ -213,4 +197,5 @@ public async Task Odsluch()
         }
     }
 }
+
 
