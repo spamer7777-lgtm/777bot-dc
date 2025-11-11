@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
@@ -9,135 +11,181 @@ namespace Commands
 {
     public class NoGroup : InteractionModuleBase<SocketInteractionContext>
     {
+        private static readonly HttpClient http = new();
+
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("ping", "See the bot's ping.")]
+        [SlashCommand("ping", "Zobacz ping bota.")]
         public async Task Ping()
         {
-            await RespondAsync(text: $"🏓 Pong! The client latency is **{Bot.Client.Latency}** ms.");
+            await RespondAsync(text: $"🏓 Pong! Opóźnienie klienta: **{Bot.Client.Latency}** ms.");
         }
 
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
         [SlashCommand("hi", "Powiedz Siemano!")]
-        public async Task Hi([Summary("user", "The user to say hi to.")] IUser user)
+        public async Task Hi([Summary("user", "Użytkownik, do którego chcesz powiedzieć siemano.")] IUser user)
         {
             await RespondAsync(text: $"👋 HEEEJ! {user.Mention}!");
         }
 
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-        [SlashCommand("balance", "Check your current credits.")]
+        [SlashCommand("balance", "Sprawdź swój aktualny balans kredytów.")]
         public async Task Balance()
         {
             var user = UserDataManager.GetUser(Context.User.Id);
             var embed = new EmbedBuilder()
-                .WithTitle($"Balans: 💰 {Context.User.Username}")
-                .WithDescription($"Masz **{user.Credits}** kredtyów.")
+                .WithTitle($"💰 Balans użytkownika: {Context.User.Username}")
+                .WithDescription($"Masz **{user.Credits}** kredytów.")
                 .WithColor(Color.Gold)
                 .Build();
 
             await RespondAsync(embed: embed);
         }
 
-[CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
-[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-[SlashCommand("slots", "Sprawdź swoje szczęście")]
-[DefaultMemberPermissions(GuildPermission.SendMessages)] // All users can run
-public async Task Slots()
-{
-    const int cost = 10;
-    const int reward = 50;
-
-    // Get user (auto-creates if not exist)
-    var user = UserDataManager.GetUser(Context.User.Id);
-
-    if (user.Credits < cost)
-    {
-        await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Aktualnie masz ich: {user.Credits}.");
-        return;
-    }
-
-    // Defer response to avoid timeout
-    await DeferAsync();
-
-    UserDataManager.RemoveCredits(Context.User.Id, cost);
-
-    string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
-    string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
-    var rand = new Random();
-
-    var embed = new EmbedBuilder()
-        .WithTitle("🎰 777 Slots 🎰")
-        .WithDescription("[⬜][⬜][⬜] Kręcimy...")
-        .WithColor(Color.DarkGrey)
-        .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
-        .Build();
-
-    var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
-    if (msg == null) return;
-
-    // Animate reels 6 times
-    for (int i = 0; i < 6; i++)
-    {
-        var spin = Enumerable.Range(0, 3)
-            .Select(_ => icons[rand.Next(icons.Length)])
-            .ToArray();
-
-        var effect1 = effects[rand.Next(effects.Length)];
-        var effect2 = effects[rand.Next(effects.Length)];
-
-        embed = new EmbedBuilder()
-            .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
-            .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
-            .WithColor(Color.DarkGrey)
-            .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
-            .Build();
-
-        await msg.ModifyAsync(m => m.Embed = embed);
-        await Task.Delay(250);
-    }
-
-    // Final spin
-    var finalResult = Enumerable.Range(0, 3)
-        .Select(_ => icons[rand.Next(icons.Length)])
-        .ToArray();
-
-    bool win = finalResult.Distinct().Count() == 1;
-    if (win) UserDataManager.AddCredits(Context.User.Id, reward);
-
-    embed = new EmbedBuilder()
-        .WithTitle("🎰 777 Slots 🎰")
-        .WithDescription($"[{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
-                         (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                                $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
-        .WithColor(win ? Color.Gold : Color.DarkGrey)
-        .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
-        .Build();
-
-    await msg.ModifyAsync(m => m.Embed = embed);
-}
-
-        // 🛠️ Hidden Admin Command
-        [SlashCommand("grantcredits", "Admin only: give credits to a user (hidden).")]
-        [DefaultMemberPermissions(GuildPermission.Administrator)] // require admin permission
-        [CommandContextType(InteractionContextType.Guild)] // guild only
-        [IntegrationType(ApplicationIntegrationType.GuildInstall)] // local command, not global
-        public async Task GrantCredits(
-            [Summary("user", "The user to give credits to.")] IUser target,
-            [Summary("amount", "The amount of credits to add.")] int amount)
+        [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
+        [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+        [SlashCommand("slots", "Sprawdź swoje szczęście")]
+        [DefaultMemberPermissions(GuildPermission.SendMessages)] // Dostępne dla wszystkich użytkowników
+        public async Task Slots()
         {
-            // optional: restrict by specific user ID
-            ulong ownerId = 299929951451217921; // 🔒 your Discord ID here
+            const int cost = 10;
+            const int reward = 50;
+
+            var user = UserDataManager.GetUser(Context.User.Id);
+
+            if (user.Credits < cost)
+            {
+                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Aktualnie masz ich: {user.Credits}.");
+                return;
+            }
+
+            await DeferAsync();
+
+            UserDataManager.RemoveCredits(Context.User.Id, cost);
+
+            string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
+            string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
+            var rand = new Random();
+
+            var embed = new EmbedBuilder()
+                .WithTitle("🎰 777 Slots 🎰")
+                .WithDescription("[⬜][⬜][⬜] Kręcimy...")
+                .WithColor(Color.DarkGrey)
+                .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
+                .Build();
+
+            var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
+            if (msg == null) return;
+
+            // Animacja bębnów
+            for (int i = 0; i < 6; i++)
+            {
+                var spin = Enumerable.Range(0, 3)
+                    .Select(_ => icons[rand.Next(icons.Length)])
+                    .ToArray();
+
+                var effect1 = effects[rand.Next(effects.Length)];
+                var effect2 = effects[rand.Next(effects.Length)];
+
+                embed = new EmbedBuilder()
+                    .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
+                    .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
+                    .WithColor(Color.DarkGrey)
+                    .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+                    .Build();
+
+                await msg.ModifyAsync(m => m.Embed = embed);
+                await Task.Delay(250);
+            }
+
+            // Wynik końcowy
+            var finalResult = Enumerable.Range(0, 3)
+                .Select(_ => icons[rand.Next(icons.Length)])
+                .ToArray();
+
+            bool win = finalResult.Distinct().Count() == 1;
+            if (win) UserDataManager.AddCredits(Context.User.Id, reward);
+
+            embed = new EmbedBuilder()
+                .WithTitle("🎰 777 Slots 🎰")
+                .WithDescription($"[{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
+                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
+                                        $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
+                .WithColor(win ? Color.Gold : Color.DarkGrey)
+                .WithFooter($"Twój nowy balans: {UserDataManager.GetUser(Context.User.Id).Credits} kredytów")
+                .Build();
+
+            await msg.ModifyAsync(m => m.Embed = embed);
+        }
+
+        [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
+        [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
+        [SlashCommand("odsluch", "Sprawdź kto aktualnie nadaje na ProjectFM")]
+        public async Task Odsluch()
+        {
+            await DeferAsync();
+
+            try
+            {
+                string url = "https://radio.projectrpg.pl/statsv2";
+                var response = await http.GetStringAsync(url);
+
+                using var doc = JsonDocument.Parse(response);
+                var root = doc.RootElement;
+
+                string streamer = root.GetProperty("live").GetProperty("streamer_name").GetString() ?? "Brak danych";
+                bool isLive = root.GetProperty("live").GetProperty("is_live").GetBoolean();
+                int uniqueListeners = root.GetProperty("listeners").GetProperty("unique").GetInt32();
+                string listenUrl = root.GetProperty("station").GetProperty("listen_url").GetString() ?? "https://radio.projectrpg.pl";
+
+                var embed = new EmbedBuilder()
+                    .WithTitle("📻 ProjectFM - Odsłuch na żywo")
+                    .WithDescription(isLive
+                        ? $"🎙️ **Aktualnie nadaje:** `{streamer}`\n👥 **Unikalnych słuchaczy:** `{uniqueListeners}`"
+                        : "🚫 Aktualnie nikt nie nadaje.")
+                    .WithColor(isLive ? Color.Green : Color.DarkGrey)
+                    .AddField("🔗 Link do odsłuchu", $"[Kliknij, aby słuchać]({listenUrl})")
+                    .WithFooter("Dane pochodzą z radio.projectrpg.pl")
+                    .WithCurrentTimestamp()
+                    .Build();
+
+                await FollowupAsync(embed: embed, ephemeral: false);
+            }
+            catch (Exception ex)
+            {
+                var errorEmbed = new EmbedBuilder()
+                    .WithTitle("❌ Błąd")
+                    .WithDescription("Nie udało się pobrać danych z API radia.")
+                    .WithColor(Color.Red)
+                    .WithFooter(ex.Message)
+                    .Build();
+
+                await FollowupAsync(embed: errorEmbed, ephemeral: true);
+            }
+        }
+
+        // 🛠️ Komenda administratora
+        [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
+        [DefaultMemberPermissions(GuildPermission.Administrator)]
+        [CommandContextType(InteractionContextType.Guild)]
+        [IntegrationType(ApplicationIntegrationType.GuildInstall)]
+        public async Task GrantCredits(
+            [Summary("user", "Użytkownik, któremu chcesz dodać kredyty.")] IUser target,
+            [Summary("amount", "Liczba kredytów do dodania.")] int amount)
+        {
+            ulong ownerId = 299929951451217921; // Twój Discord ID
+
             if (Context.User.Id != ownerId && !((SocketGuildUser)Context.User).GuildPermissions.Administrator)
             {
-                await RespondAsync("🚫 You are not authorized to use this command.", ephemeral: true);
+                await RespondAsync("🚫 Nie masz uprawnień do użycia tej komendy.", ephemeral: true);
                 return;
             }
 
             if (amount <= 0)
             {
-                await RespondAsync("⚠️ Amount must be greater than 0.", ephemeral: true);
+                await RespondAsync("⚠️ Ilość musi być większa niż 0.", ephemeral: true);
                 return;
             }
 
@@ -145,21 +193,9 @@ public async Task Slots()
             var newBalance = UserDataManager.GetUser(target.Id).Credits;
 
             await RespondAsync(
-                $"✅ Added **{amount}** credits to {target.Mention}. New balance: **{newBalance}** credits.",
-                ephemeral: true // hidden response
+                $"✅ Dodano **{amount}** kredytów użytkownikowi {target.Mention}. Nowy balans: **{newBalance}** kredytów.",
+                ephemeral: true
             );
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
