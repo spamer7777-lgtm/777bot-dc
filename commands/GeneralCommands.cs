@@ -129,18 +129,10 @@ public async Task Odsłuch()
 
     try
     {
-        string url = "https://radio.projectrpg.pl/statsv2";
+        // 🔹 Zmień na swój proxy URL
+        string url = "https://twojadomena.pl/radio.php";
 
-        // 🔹 Tworzymy HttpRequest z nagłówkami jak przeglądarka
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.1 Safari/537.36");
-        request.Headers.Add("Accept", "application/json, text/plain, */*");
-        request.Headers.Add("Referer", "https://radio.projectrpg.pl/");
-        request.Headers.Add("Origin", "https://radio.projectrpg.pl");
-        request.Headers.Add("Accept-Language", "pl,en;q=0.9");
-        request.Headers.Add("Connection", "keep-alive");
-
-        var response = await Bot.Http.SendAsync(request);
+        var response = await Bot.Http.GetAsync(url);
         if (!response.IsSuccessStatusCode)
         {
             await FollowupAsync($"❌ Nie udało się pobrać danych z API. Kod błędu: {(int)response.StatusCode} {response.ReasonPhrase}", ephemeral: true);
@@ -181,7 +173,6 @@ public async Task Odsłuch()
     }
 }
 
-
         // 🛠️ Komenda administratora
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -215,6 +206,7 @@ public async Task Odsłuch()
         }
     }
 }
+
 
 
 
