@@ -97,24 +97,32 @@ public static class UserDataManager
 
     // ------------------ LEADERBOARD ------------------
 
-    // New leaderboard method, returns userId + credits tuples
-    public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
+public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
+{
+    var topList = new List<(ulong, int)>();
+
+    // Use projection to safely get userId and credits, ignoring _id
+    var projection = Builders<UserData>.Projection.Include("userId").Include("credits");
+    var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
+                            .Project(projection)
+                            .Sort(Builders<UserData>.Sort.Descending("credits"))
+                            .Limit(count)
+                            .ToListAsync();
+
+    foreach (var doc in cursor)
     {
-        var projection = Builders<UserData>.Projection.Include(u => u.UserId).Include(u => u.Credits);
-
-        var topDocs = await Users
-            .Find(FilterDefinition<UserData>.Empty)
-            .Project(projection)
-            .Sort(Builders<UserData>.Sort.Descending("credits"))
-            .Limit(count)
-            .ToListAsync();
-
-        return topDocs.Select(d => (
-            UserId: (ulong)d["userId"].AsInt64,
-            Credits: d["credits"].AsInt32
-        )).ToList();
+        // Convert userId safely
+        if (doc.Contains("userId") && doc["userId"].IsInt64)
+        {
+            ulong uid = (ulong)doc["userId"].AsInt64;
+            int credits = doc.Contains("credits") ? doc["credits"].AsInt32 : 0;
+            topList.Add((uid, credits));
+        }
     }
+
+    return topList;
 }
+
 
 public class UserData
 {
