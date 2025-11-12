@@ -109,8 +109,7 @@ public static class UserDataManager
 public class UserData
 {
     [BsonId]
-    [BsonRepresentation(MongoDB.Bson.BsonType.String)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
+    public ObjectId Id { get; set; }
 
     [BsonElement("userId")]
     public ulong UserId { get; set; }
