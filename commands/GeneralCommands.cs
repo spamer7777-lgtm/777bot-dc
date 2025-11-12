@@ -120,58 +120,6 @@ namespace Commands
             await msg.ModifyAsync(m => m.Embed = embed);
         }
 
-[CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
-[IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
-[SlashCommand("odsluch", "Sprawdź kto aktualnie nadaje i ilu jest słuchaczy.")]
-public async Task Odsłuch()
-{
-    await DeferAsync();
-
-    try
-    {
-        // 🔹 Zmień na swój proxy URL
-        string url = "https://777bot.free.nf/radio.php";
-
-        var response = await Bot.Http.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
-        {
-            await FollowupAsync($"❌ Nie udało się pobrać danych z API. Kod błędu: {(int)response.StatusCode} {response.ReasonPhrase}", ephemeral: true);
-            return;
-        }
-
-        string json = await response.Content.ReadAsStringAsync();
-
-        using var doc = System.Text.Json.JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        var live = root.GetProperty("live");
-        bool isLive = live.GetProperty("is_live").GetBoolean();
-        string streamer = isLive ? live.GetProperty("streamer_name").GetString() ?? "Nieznany" : "Offline";
-
-        var listeners = root.GetProperty("listeners");
-        int uniqueListeners = listeners.GetProperty("unique").GetInt32();
-        int totalListeners = listeners.GetProperty("total").GetInt32();
-
-        var listenUrl = root.GetProperty("station").GetProperty("listen_url").GetString() ?? "https://radio.projectrpg.pl";
-
-        var embed = new EmbedBuilder()
-            .WithTitle("📻 ProjectFM – Status")
-            .WithDescription(isLive
-                ? $"🎙️ **Na żywo:** `{streamer}`\n👥 **Unikalnych słuchaczy:** `{uniqueListeners}`\n🔊 **Łączna liczba słuchaczy:** `{totalListeners}`"
-                : "🚫 Aktualnie nikt nie nadaje.")
-            .AddField("🔗 Link do odsłuchu", $"[Kliknij, aby słuchać]({listenUrl})")
-            .WithColor(isLive ? Color.Green : Color.Red)
-            .WithFooter("Dane pochodzą z radio.projectrpg.pl")
-            .WithCurrentTimestamp()
-            .Build();
-
-        await FollowupAsync(embed: embed, ephemeral: false);
-    }
-    catch (Exception ex)
-    {
-        await FollowupAsync($"⚠️ Błąd przy pobieraniu danych: {ex.Message}", ephemeral: true);
-    }
-}
 
         // 🛠️ Komenda administratora
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
@@ -206,6 +154,7 @@ public async Task Odsłuch()
         }
     }
 }
+
 
 
 
