@@ -8,6 +8,8 @@ using System.Threading;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using Performance;
+using System.Collections.Generic;
 
 public static class Bot
 {
@@ -23,6 +25,7 @@ public static class Bot
     private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
 
+    // 🟢 Nowy globalny HttpClient z poprawnymi nagłówkami
     public static readonly HttpClient Http = new HttpClient(new HttpClientHandler
     {
         AllowAutoRedirect = true,
@@ -32,11 +35,18 @@ public static class Bot
         Timeout = TimeSpan.FromSeconds(10)
     };
 
+    // 🟢 Statyczny konstruktor — dodaje nagłówki
     static Bot()
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DiscordBot/1.0");
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
+
+    // ------------------ MESSAGE CREDIT DROPS ------------------
+    private static readonly Dictionary<ulong, DateTime> messageCreditCooldowns = new();
+    private static readonly int creditCooldownSeconds = 60; // 1 minute cooldown
+    private static readonly int creditAmountMin = 1;
+    private static readonly int creditAmountMax = 5;
 
     public static async Task Main()
     {
@@ -66,6 +76,12 @@ public static class Bot
         bool containsRozkminka = words.Contains("co?");
 
         int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
+
+        // ------------------ MESSAGE CREDIT DROP ------------------
+        if (triggerCount == 0)
+            await HandleMessageCredits(user);
+
+        // ------------------ SPECIAL TRIGGERS ------------------
         if (triggerCount != 1) return;
 
         if (containsXddd)
@@ -74,6 +90,27 @@ public static class Bot
             await HandleTubasDetection(message, user);
         else if (containsRozkminka)
             await HandleRozkminkaDetection(message, user);
+    }
+
+    private static async Task HandleMessageCredits(SocketGuildUser user)
+    {
+        // Check cooldown
+        if (messageCreditCooldowns.TryGetValue(user.Id, out DateTime lastClaim))
+        {
+            if ((DateTime.UtcNow - lastClaim).TotalSeconds < creditCooldownSeconds)
+                return; // still in cooldown
+        }
+
+        // Give random credits
+        var rand = new Random();
+        int reward = rand.Next(creditAmountMin, creditAmountMax + 1);
+
+        await UserDataManager.AddCreditsAsync(user.Id, reward);
+
+        messageCreditCooldowns[user.Id] = DateTime.UtcNow;
+
+        var newBalance = (await UserDataManager.GetUserAsync(user.Id)).Credits;
+        Console.WriteLine($"[CREDIT DROP] Gave {reward} credits to {user.Username}. New balance: {newBalance}");
     }
 
     private static async Task HandleXdddDetection(SocketMessage message, SocketGuildUser user)
@@ -191,8 +228,10 @@ public static class Bot
             await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
         else
         {
-            // Removed Stats references, just log command
-            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | Command executed: {info.Name}");
+            // Commented out Stats for now since it may not exist
+            // var cpuUsage = await Stats.GetCpuUsageForProcess();
+            // var ramUsage = Stats.GetRamUsageForProcess();
+            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | Command: {info.Name}");
         }
     }
 
