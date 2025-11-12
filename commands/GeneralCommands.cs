@@ -39,68 +39,74 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        [SlashCommand("slots", "Sprawdź swoje szczęście")]
-        public async Task Slots()
-        {
-            const int cost = 10;
-            const int reward = 50;
+     [SlashCommand("slots", "Sprawdź swoje szczęście")]
+public async Task Slots(
+    [Summary("amount", "Kwota, którą chcesz postawić")] int amount = 10)
+{
+    if (amount <= 0)
+    {
+        await RespondAsync("⚠️ Podaj kwotę większą niż 0.", ephemeral: true);
+        return;
+    }
 
-            var user = await UserDataManager.GetUserAsync(Context.User.Id);
-            if (user.Credits < cost)
-            {
-                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Masz tylko {user.Credits}.");
-                return;
-            }
+    var user = await UserDataManager.GetUserAsync(Context.User.Id);
+    if (user.Credits < amount)
+    {
+        await RespondAsync($"🚫 Nie masz wystarczająco kredytów! Masz tylko {user.Credits}.", ephemeral: true);
+        return;
+    }
 
-            await DeferAsync();
-            await UserDataManager.RemoveCreditsAsync(Context.User.Id, cost);
+    await DeferAsync();
+    await UserDataManager.RemoveCreditsAsync(Context.User.Id, amount);
 
-            string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
-            string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
-            var rand = new Random();
+    string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
+    string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
+    var rand = new Random();
 
-            var embed = new EmbedBuilder()
-                .WithTitle("🎰 777 Slots 🎰")
-                .WithDescription("[⬜][⬜][⬜] Kręcimy...")
-                .WithColor(Color.DarkGrey)
-                .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
-                .Build();
+    var embed = new EmbedBuilder()
+        .WithTitle("🎰 777 Slots 🎰")
+        .WithDescription("[⬜][⬜][⬜] Kręcimy...")
+        .WithColor(Color.DarkGrey)
+        .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
+        .Build();
 
-            var msg = await FollowupAsync(embed: embed) as IUserMessage;
-            if (msg == null) return;
+    var msg = await FollowupAsync(embed: embed) as IUserMessage;
+    if (msg == null) return;
 
-            for (int i = 0; i < 6; i++)
-            {
-                var spin = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
-                var effect1 = effects[rand.Next(effects.Length)];
-                var effect2 = effects[rand.Next(effects.Length)];
+    for (int i = 0; i < 6; i++)
+    {
+        var spin = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
+        var effect1 = effects[rand.Next(effects.Length)];
+        var effect2 = effects[rand.Next(effects.Length)];
 
-                embed = new EmbedBuilder()
-                    .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
-                    .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
-                    .WithColor(Color.DarkGrey)
-                    .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
-                    .Build();
+        embed = new EmbedBuilder()
+            .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
+            .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
+            .WithColor(Color.DarkGrey)
+            .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
+            .Build();
 
-                await msg.ModifyAsync(m => m.Embed = embed);
-                await Task.Delay(250);
-            }
+        await msg.ModifyAsync(m => m.Embed = embed);
+        await Task.Delay(250);
+    }
 
-            var finalResult = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
-            bool win = finalResult.Distinct().Count() == 1;
-            if (win) await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
+    var finalResult = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
+    bool win = finalResult.Distinct().Count() == 1;
+    int reward = amount * 5; // Reward scales with the bet amount
+    if (win) await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
 
-            embed = new EmbedBuilder()
-                .WithTitle("🎰 777 Slots 🎰")
-                .WithDescription($"[{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
-                                 (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
-                                        $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
-                .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
-                .Build();
+    embed = new EmbedBuilder()
+        .WithTitle("🎰 777 Slots 🎰")
+        .WithDescription($"[{finalResult[0]}][{finalResult[1]}][{finalResult[2]}]\n" +
+                         (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
+                                $"😢 Przegrałeś/aś {amount} kredytów. Następnym razem lepiej!"))
+        .WithColor(win ? Color.Gold : Color.DarkGrey)
+        .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
+        .Build();
 
-            await msg.ModifyAsync(m => m.Embed = embed);
-        }
+    await msg.ModifyAsync(m => m.Embed = embed);
+}
+
 
         [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
         public async Task Bet([Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
@@ -255,6 +261,7 @@ public async Task Leaderboard()
         }
     }
 }
+
 
 
 
