@@ -176,11 +176,14 @@ public static class Bot
         });
 
         await Service.AddModulesAsync(typeof(Bot).Assembly, null);
-        await Service.RegisterCommandsGloballyAsync();
+
+        ulong guildId = 1222629512056148008; // <-- replace with your Discord server ID
+        await Service.RegisterCommandsToGuildAsync(guildId);
+        //await Service.RegisterCommandsGloballyAsync();
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
-        Console.WriteLine($"Bot is ready! Connected to {Client.Guilds.Count} guild(s).");
+        Console.WriteLine($"✅ Bot is ready! Loaded {Service.Modules.Count} command modules.");
         await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
 
         string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
@@ -252,4 +255,5 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
