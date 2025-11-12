@@ -175,8 +175,7 @@ public static class Bot
             ThrowOnError = true
         });
 
-        await Service.AddModulesAsync(typeof(Bot).Assembly, null);
-
+        await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
         //ulong guildId = 1222629512056148008; // <-- replace with your Discord server ID
         //await Service.RegisterCommandsToGuildAsync(guildId);
         await Service.RegisterCommandsGloballyAsync();
@@ -255,6 +254,7 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
 
