@@ -162,7 +162,7 @@ public async Task Bet(
         .WithTitle($"{resultEmoji} {title}")
         .WithDescription(description)
         .WithColor(color)
-        .WithThumbnailUrl("https://cdn-icons-png.flaticon.com/512/889/889441.png") // small casino chip
+        .WithThumbnailUrl("https://png.pngtree.com/png-clipart/20220823/original/pngtree-poker-chip-png-image_8470970.png") // small casino chip
         .WithFooter($"Zakręcił: {Context.User.Username}", Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
         .WithCurrentTimestamp()
         .Build();
@@ -263,5 +263,6 @@ public async Task Daily()
         }
     }
 }
+
 
 
