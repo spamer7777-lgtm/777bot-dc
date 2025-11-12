@@ -117,39 +117,58 @@ namespace Commands
             await msg.ModifyAsync(m => m.Embed = embed);
         }
 
-        // 🎲 NEW: Bet Command
-        [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
-        public async Task Bet(
-            [Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
-        {
-            if (amount <= 0)
-            {
-                await RespondAsync("⚠️ Podaj kwotę większą niż 0.", ephemeral: true);
-                return;
-            }
+   // 🎲 NEW: Bet Command (Embed Version)
+[SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
+public async Task Bet(
+    [Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
+{
+    if (amount <= 0)
+    {
+        await RespondAsync("⚠️ Podaj kwotę większą niż 0.", ephemeral: true);
+        return;
+    }
 
-            var user = UserDataManager.GetUser(Context.User.Id);
-            if (user.Credits < amount)
-            {
-                await RespondAsync($"🚫 Nie masz wystarczająco kredytów! Masz tylko {user.Credits}.", ephemeral: true);
-                return;
-            }
+    var user = UserDataManager.GetUser(Context.User.Id);
+    if (user.Credits < amount)
+    {
+        await RespondAsync($"🚫 Nie masz wystarczająco kredytów! Masz tylko {user.Credits}.", ephemeral: true);
+        return;
+    }
 
-            var rand = new Random();
-            bool win = rand.NextDouble() < 0.5; // 50% szansy na wygraną
+    var rand = new Random();
+    bool win = rand.NextDouble() < 0.5; // 50% szansy na wygraną
 
-            if (win)
-            {
-                UserDataManager.AddCredits(Context.User.Id, amount);
-                await RespondAsync($"🎉 Wygrałeś/aś! Twoje **{amount}** kredytów zostało podwojone! 💰 Nowy balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**");
-            }
-            else
-            {
-                UserDataManager.RemoveCredits(Context.User.Id, amount);
-                await RespondAsync($"💀 Przegrałeś/aś **{amount}** kredytów! 😢 Aktualny balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**");
-            }
-        }
+    string resultEmoji = win ? "💰" : "💀";
+    string title = win ? "🎉 WYGRAŁEŚ!" : "😢 PRZEGRAŁEŚ!";
+    string description;
+    Color color;
 
+    if (win)
+    {
+        UserDataManager.AddCredits(Context.User.Id, amount);
+        description = $"Twoje **{amount}** kredytów zostało podwojone! 💸\n\n" +
+                      $"💳 Nowy balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
+        color = Color.Gold;
+    }
+    else
+    {
+        UserDataManager.RemoveCredits(Context.User.Id, amount);
+        description = $"Straciłeś/aś **{amount}** kredytów. 😔\n\n" +
+                      $"💳 Aktualny balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
+        color = Color.DarkRed;
+    }
+
+    var embed = new EmbedBuilder()
+        .WithTitle($"{resultEmoji} {title}")
+        .WithDescription(description)
+        .WithColor(color)
+        .WithThumbnailUrl("https://cdn-icons-png.flaticon.com/512/889/889441.png") // small casino chip
+        .WithFooter($"Zakręcił: {Context.User.Username}", Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
+        .WithCurrentTimestamp()
+        .Build();
+
+    await RespondAsync(embed: embed);
+}
         // 🏆 NEW: Leaderboard Command
         [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
         public async Task Leaderboard()
@@ -244,4 +263,5 @@ public async Task Daily()
         }
     }
 }
+
 
