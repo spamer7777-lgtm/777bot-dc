@@ -162,7 +162,7 @@ public async Task Bet(
         .WithTitle($"{resultEmoji} {title}")
         .WithDescription(description)
         .WithColor(color)
-        .WithThumbnailUrl("https://png.pngtree.com/png-clipart/20220823/original/pngtree-poker-chip-png-image_8470970.png") // small casino chip
+        .WithThumbnailUrl("https://e7.pngegg.com/pngimages/542/1006/png-clipart-poker-chips-illustration-blackjack-online-casino-online-poker-roulette-bargaining-chip-game-electronics-thumbnail.png") // small casino chip
         .WithFooter($"Zakręcił: {Context.User.Username}", Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
         .WithCurrentTimestamp()
         .Build();
@@ -263,6 +263,7 @@ public async Task Daily()
         }
     }
 }
+
 
 
 
