@@ -109,7 +109,7 @@ public static class UserDataManager
 public class UserData
 {
     [BsonId]
-    public long Id { get; set; }
+    public ObjectId Id { get; set; }
 
     [BsonElement("userId")]
     public ulong UserId { get; set; }
