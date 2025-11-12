@@ -1,86 +1,78 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 
 public static class UserDataManager
 {
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "Data", "users.json");
-    private static readonly object LockObj = new();
-    private static Dictionary<ulong, UserData> Users = new();
+    private static readonly IMongoCollection<UserData> Users;
 
     static UserDataManager()
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-        Load();
+        var mongoUri = Environment.GetEnvironmentVariable("MONGO_URL");
+        if (string.IsNullOrEmpty(mongoUri))
+            throw new Exception("MONGO_URL is not set in environment variables.");
+
+        var client = new MongoClient(mongoUri);
+        var db = client.GetDatabase("777bot"); // Database name
+        Users = db.GetCollection<UserData>("users");
+
+        // Create index on Credits for leaderboard
+        var indexKeys = Builders<UserData>.IndexKeys.Descending(u => u.Credits);
+        Users.Indexes.CreateOne(new CreateIndexModel<UserData>(indexKeys));
     }
 
-    public static void Load()
-    {
-        if (File.Exists(FilePath))
-        {
-            var json = File.ReadAllText(FilePath);
-            Users = JsonSerializer.Deserialize<Dictionary<ulong, UserData>>(json) ?? new();
-        }
-    }
-
-    public static void Save()
-    {
-        lock (LockObj)
-        {
-            var json = JsonSerializer.Serialize(Users, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(FilePath, json);
-        }
-    }
-
+    // Get or create user
     public static UserData GetUser(ulong userId)
     {
-        if (!Users.ContainsKey(userId))
+        var filter = Builders<UserData>.Filter.Eq(u => u.UserId, userId);
+        var user = Users.Find(filter).FirstOrDefault();
+
+        if (user == null)
         {
-            Users[userId] = new UserData
+            user = new UserData
             {
                 UserId = userId,
-                Credits = 100, // default start
+                Credits = 100,
                 LastDailyClaim = null
             };
-            Save();
+            Users.InsertOne(user);
         }
-        return Users[userId];
+
+        return user;
     }
 
+    // Add credits
     public static void AddCredits(ulong userId, int amount)
     {
-        var user = GetUser(userId);
-        user.Credits += amount;
-        Save();
+        var update = Builders<UserData>.Update.Inc(u => u.Credits, amount);
+        Users.UpdateOne(u => u.UserId == userId, update, new UpdateOptions { IsUpsert = true });
     }
 
+    // Remove credits
     public static bool RemoveCredits(ulong userId, int amount)
     {
         var user = GetUser(userId);
         if (user.Credits < amount)
             return false;
 
-        user.Credits -= amount;
-        Save();
+        var update = Builders<UserData>.Update.Inc(u => u.Credits, -amount);
+        Users.UpdateOne(u => u.UserId == userId, update);
         return true;
     }
 
-    // 🏆 Helper: Get top users by credits
+    // Top users for leaderboard
     public static List<UserData> GetTopUsers(int count)
     {
-        lock (LockObj)
-        {
-            return Users.Values
-                .OrderByDescending(u => u.Credits)
-                .Take(count)
-                .ToList();
-        }
+        return Users.Find(_ => true)
+                    .SortByDescending(u => u.Credits)
+                    .Limit(count)
+                    .ToList();
     }
 
-    // 🎁 DAILY REWARD HELPERS
-
+    // DAILY REWARD HELPERS
     public static bool CanClaimDaily(ulong userId)
     {
         var user = GetUser(userId);
@@ -102,17 +94,18 @@ public static class UserDataManager
 
     public static void SetDailyClaim(ulong userId)
     {
-        var user = GetUser(userId);
-        user.LastDailyClaim = DateTime.UtcNow;
-        Save();
+        var update = Builders<UserData>.Update.Set(u => u.LastDailyClaim, DateTime.UtcNow);
+        Users.UpdateOne(u => u.UserId == userId, update, new UpdateOptions { IsUpsert = true });
     }
 }
 
 public class UserData
 {
+    [BsonId]
+    [BsonRepresentation(BsonType.Int64)]
     public ulong UserId { get; set; }
+
     public int Credits { get; set; }
 
-    // 🕒 Track when user last claimed daily reward
     public DateTime? LastDailyClaim { get; set; }
 }
