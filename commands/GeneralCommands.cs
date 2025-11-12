@@ -47,7 +47,6 @@ namespace Commands
         [CommandContextType(InteractionContextType.Guild, InteractionContextType.BotDm, InteractionContextType.PrivateChannel)]
         [IntegrationType(ApplicationIntegrationType.UserInstall, ApplicationIntegrationType.GuildInstall)]
         [SlashCommand("slots", "Sprawdź swoje szczęście")]
-        [DefaultMemberPermissions(GuildPermission.SendMessages)] // Dostępne dla wszystkich użytkowników
         public async Task Slots()
         {
             const int cost = 10;
@@ -79,7 +78,6 @@ namespace Commands
             var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
             if (msg == null) return;
 
-            // Animacja bębnów
             for (int i = 0; i < 6; i++)
             {
                 var spin = Enumerable.Range(0, 3)
@@ -100,7 +98,6 @@ namespace Commands
                 await Task.Delay(250);
             }
 
-            // Wynik końcowy
             var finalResult = Enumerable.Range(0, 3)
                 .Select(_ => icons[rand.Next(icons.Length)])
                 .ToArray();
@@ -120,6 +117,62 @@ namespace Commands
             await msg.ModifyAsync(m => m.Embed = embed);
         }
 
+        // 🎲 NEW: Bet Command
+        [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
+        public async Task Bet(
+            [Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
+        {
+            if (amount <= 0)
+            {
+                await RespondAsync("⚠️ Podaj kwotę większą niż 0.", ephemeral: true);
+                return;
+            }
+
+            var user = UserDataManager.GetUser(Context.User.Id);
+            if (user.Credits < amount)
+            {
+                await RespondAsync($"🚫 Nie masz wystarczająco kredytów! Masz tylko {user.Credits}.", ephemeral: true);
+                return;
+            }
+
+            var rand = new Random();
+            bool win = rand.NextDouble() < 0.5; // 50% szansy na wygraną
+
+            if (win)
+            {
+                UserDataManager.AddCredits(Context.User.Id, amount);
+                await RespondAsync($"🎉 Wygrałeś/aś! Twoje **{amount}** kredytów zostało podwojone! 💰 Nowy balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**");
+            }
+            else
+            {
+                UserDataManager.RemoveCredits(Context.User.Id, amount);
+                await RespondAsync($"💀 Przegrałeś/aś **{amount}** kredytów! 😢 Aktualny balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**");
+            }
+        }
+
+        // 🏆 NEW: Leaderboard Command
+        [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
+        public async Task Leaderboard()
+        {
+            var topUsers = UserDataManager.GetTopUsers(10);
+            if (topUsers == null || topUsers.Count == 0)
+            {
+                await RespondAsync("📉 Brak danych o użytkownikach.");
+                return;
+            }
+
+            var desc = string.Join("\n", topUsers.Select((u, i) =>
+                $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
+
+            var embed = new EmbedBuilder()
+                .WithTitle("🏆 Tablica Najbogatszych 🏆")
+                .WithDescription(desc)
+                .WithColor(Color.Gold)
+                .WithFooter("Czy uda ci się wejść do TOP 10?")
+                .Build();
+
+            await RespondAsync(embed: embed);
+        }
 
         // 🛠️ Komenda administratora
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
@@ -154,9 +207,3 @@ namespace Commands
         }
     }
 }
-
-
-
-
-
-
