@@ -175,7 +175,7 @@ public static class Bot
             ThrowOnError = true
         });
 
-        await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
+        await Service.AddModulesAsync(typeof(Bot).Assembly, null);
         await Service.RegisterCommandsGloballyAsync();
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
@@ -252,3 +252,4 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
