@@ -135,36 +135,71 @@ namespace Commands
 
             await RespondAsync(embed: embed, components: builder.Build());
             Bot.Client.ButtonExecuted += async component =>
-            {
-                if (component.User.Id != Context.User.Id) return;
-                if (!component.Data.CustomId.StartsWith("roulette_")) return;
+{
+    if (component.User.Id != Context.User.Id) return;
+    if (!component.Data.CustomId.StartsWith("roulette_")) return;
 
-                await component.DeferAsync();
+    await component.DeferAsync();
 
-                string colorChoice = component.Data.CustomId.Split('_')[1];
-                await UserDataManager.RemoveCreditsAsync(Context.User.Id, stawka);
+    string colorChoice = component.Data.CustomId.Split('_')[1];
+    await UserDataManager.RemoveCreditsAsync(Context.User.Id, stawka);
 
-                var rand = new Random();
-                int number = rand.Next(0, 37);
-                string outcomeColor = number == 0 ? "green" : (number % 2 == 0 ? "black" : "red");
+    var rand = new Random();
 
-                bool win = colorChoice == outcomeColor;
-                int reward = colorChoice == "green" ? stawka * 14 : stawka * 2;
-                if (win) await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
+    // Create an initial message showing "spinning"
+    var embed = new EmbedBuilder()
+        .WithTitle("🎡 Ruletka się kręci!")
+        .WithDescription("Kula wiruje... 🎲")
+        .WithColor(Color.DarkGrey)
+        .Build();
 
-                var result = new EmbedBuilder()
-                    .WithTitle("🎯 Wynik ruletki!")
-                    .WithDescription($"Wypadło **{number}** ({(outcomeColor switch { "red" => "🔴 Czerwony", "black" => "⚫ Czarny", _ => "🟩 Zielony" })})!\n" +
-                                     (win
-                                         ? $"🎉 Wygrałeś/aś **{reward}** kredytów!"
-                                         : $"💀 Przegrałeś/aś **{stawka}** kredytów."))
-                    .WithColor(win ? Color.Gold : Color.DarkRed)
-                    .WithFooter($"Nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
-                    .Build();
+    var msg = await component.FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
 
-                await component.FollowupAsync(embed: result, ephemeral: true);
-            };
-        }
+    // Simulate spinning with a list of possible numbers
+    int finalNumber = rand.Next(0, 37);
+    string outcomeColor = finalNumber == 0 ? "green" : (finalNumber % 2 == 0 ? "black" : "red");
+
+    // Sequence of random numbers to display
+    List<int> spinSequence = new();
+    for (int i = 0; i < 15; i++) spinSequence.Add(rand.Next(0, 37));
+    spinSequence.Add(finalNumber); // ensure it ends on the actual number
+
+    // Spin animation
+    for (int i = 0; i < spinSequence.Count; i++)
+    {
+        int num = spinSequence[i];
+        string col = num == 0 ? "🟩" : (num % 2 == 0 ? "⚫" : "🔴");
+
+        var spinEmbed = new EmbedBuilder()
+            .WithTitle("🎡 Ruletka się kręci!")
+            .WithDescription($"Kula toczy się... **{col} {num}**")
+            .WithColor(Color.DarkGrey)
+            .Build();
+
+        await msg.ModifyAsync(m => m.Embed = spinEmbed);
+
+        // Slow down toward the end
+        await Task.Delay(150 + (i * 80));
+    }
+
+    // Calculate result
+    bool win = colorChoice == outcomeColor;
+    int reward = colorChoice == "green" ? stawka * 14 : stawka * 2;
+    if (win) await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
+
+    // Final result embed
+    var result = new EmbedBuilder()
+        .WithTitle("🎯 Wynik ruletki!")
+        .WithDescription($"Wypadło **{finalNumber}** ({(outcomeColor switch { "red" => "🔴 Czerwony", "black" => "⚫ Czarny", _ => "🟩 Zielony" })})!\n\n" +
+                         (win
+                             ? $"🎉 Wygrałeś/aś **{reward}** kredytów!"
+                             : $"💀 Przegrałeś/aś **{stawka}** kredytów."))
+        .WithColor(win ? Color.Gold : Color.DarkRed)
+        .WithFooter($"Nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
+        .Build();
+
+    await msg.ModifyAsync(m => m.Embed = result);
+};
 
         [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
         public async Task Bet([Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
@@ -319,3 +354,4 @@ namespace Commands
         }
     }
 }
+
