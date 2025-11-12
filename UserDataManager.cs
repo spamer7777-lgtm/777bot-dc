@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
@@ -17,15 +18,31 @@ public static class UserDataManager
         if (string.IsNullOrEmpty(mongoUrl))
             throw new Exception("MONGO_URL is not set in environment variables.");
 
+        // Ensure authentication source is set
+        if (!mongoUrl.Contains("authSource"))
+            mongoUrl += "?authSource=admin";
+
         var client = new MongoClient(mongoUrl);
         var database = client.GetDatabase(mongoDb);
-
         Users = database.GetCollection<UserData>("users");
+
+        // Test connection
+        try
+        {
+            var count = Users.CountDocuments(FilterDefinition<UserData>.Empty);
+            Console.WriteLine($"✅ MongoDB connected! Users count: {count}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ MongoDB connection failed: {ex.Message}");
+        }
     }
 
-    public static UserData GetUser(ulong userId)
+    // ------------------ USER OPERATIONS ------------------
+
+    public static async Task<UserData> GetUserAsync(ulong userId)
     {
-        var user = Users.Find(u => u.UserId == userId).FirstOrDefault();
+        var user = await Users.Find(u => u.UserId == userId).FirstOrDefaultAsync();
         if (user == null)
         {
             user = new UserData
@@ -34,57 +51,58 @@ public static class UserDataManager
                 Credits = 100,
                 LastDailyClaim = null
             };
-            Users.InsertOne(user);
+            await Users.InsertOneAsync(user);
         }
         return user;
     }
 
-    public static void AddCredits(ulong userId, int amount)
+    public static async Task AddCreditsAsync(ulong userId, int amount)
     {
-        var user = GetUser(userId);
-        user.Credits += amount;
-        Users.ReplaceOne(u => u.UserId == userId, user);
+        var update = Builders<UserData>.Update.Inc(u => u.Credits, amount);
+        await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
-    public static bool RemoveCredits(ulong userId, int amount)
+    public static async Task<bool> RemoveCreditsAsync(ulong userId, int amount)
     {
-        var user = GetUser(userId);
+        var user = await GetUserAsync(userId);
         if (user.Credits < amount) return false;
 
-        user.Credits -= amount;
-        Users.ReplaceOne(u => u.UserId == userId, user);
+        var update = Builders<UserData>.Update.Inc(u => u.Credits, -amount);
+        await Users.UpdateOneAsync(u => u.UserId == userId, update);
         return true;
     }
 
-    public static List<UserData> GetTopUsers(int count)
-    {
-        return Users.Find(FilterDefinition<UserData>.Empty)
-                    .SortByDescending(u => u.Credits)
-                    .Limit(count)
-                    .ToList();
-    }
+    // ------------------ DAILY REWARD ------------------
 
-    // Daily helpers
-    public static bool CanClaimDaily(ulong userId)
+    public static async Task<bool> CanClaimDailyAsync(ulong userId)
     {
-        var user = GetUser(userId);
+        var user = await GetUserAsync(userId);
         if (user.LastDailyClaim == null) return true;
         return (DateTime.UtcNow - user.LastDailyClaim.Value).TotalHours >= 24;
     }
 
-    public static TimeSpan GetDailyCooldownRemaining(ulong userId)
+    public static async Task<TimeSpan> GetDailyCooldownRemainingAsync(ulong userId)
     {
-        var user = GetUser(userId);
+        var user = await GetUserAsync(userId);
         if (user.LastDailyClaim == null) return TimeSpan.Zero;
         var nextClaim = user.LastDailyClaim.Value.AddHours(24);
         return nextClaim - DateTime.UtcNow;
     }
 
-    public static void SetDailyClaim(ulong userId)
+    public static async Task SetDailyClaimAsync(ulong userId)
     {
-        var user = GetUser(userId);
-        user.LastDailyClaim = DateTime.UtcNow;
-        Users.ReplaceOne(u => u.UserId == userId, user);
+        var update = Builders<UserData>.Update.Set(u => u.LastDailyClaim, DateTime.UtcNow);
+        await Users.UpdateOneAsync(u => u.UserId == userId, update);
+    }
+
+    // ------------------ LEADERBOARD ------------------
+
+    public static async Task<List<UserData>> GetTopUsersAsync(int count)
+    {
+        return await Users.Find(FilterDefinition<UserData>.Empty)
+                          .SortByDescending(u => u.Credits)
+                          .Limit(count)
+                          .ToListAsync();
     }
 }
 
