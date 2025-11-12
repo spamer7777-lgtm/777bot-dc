@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using MongoDB.Bson;
 
 public static class UserDataManager
 {
@@ -17,7 +18,7 @@ public static class UserDataManager
         if (string.IsNullOrEmpty(mongoUrl))
             throw new Exception("MONGO_URL is not set in environment variables.");
 
-        // Ensure authentication source is set
+        // Ensure authSource=admin is included
         if (!mongoUrl.Contains("authSource"))
             mongoUrl += "?authSource=admin";
 
@@ -108,8 +109,8 @@ public static class UserDataManager
 public class UserData
 {
     [BsonId]
-    [BsonRepresentation(BsonType.String)]
-    public string Id { get; set; } = ObjectId.GenerateNewId().ToString(); // <-- CHANGE HERE
+    [BsonRepresentation(MongoDB.Bson.BsonType.String)]
+    public string Id { get; set; } = ObjectId.GenerateNewId().ToString();
 
     [BsonElement("userId")]
     public ulong UserId { get; set; }
