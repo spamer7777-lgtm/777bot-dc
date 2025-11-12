@@ -156,7 +156,7 @@ namespace Commands
 [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
 public async Task Leaderboard()
 {
-    await DeferAsync(); // tell Discord we are processing
+    await DeferAsync(); // Tell Discord we are processing
 
     List<(ulong UserId, int Credits)> topUsers;
     try
@@ -255,5 +255,6 @@ public async Task Leaderboard()
         }
     }
 }
+
 
 
