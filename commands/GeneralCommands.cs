@@ -158,16 +158,10 @@ public async Task Leaderboard()
 {
     await DeferAsync(); // tell Discord we are processing
 
-    List<BsonDocument> topUsersDocs;
+    List<(ulong UserId, int Credits)> topUsers;
     try
     {
-        // Only fetch the fields we need, ignore _id
-        topUsersDocs = await UserDataManager.Users
-            .Find(FilterDefinition<BsonDocument>.Empty)
-            .Project(Builders<BsonDocument>.Projection.Include("userId").Include("credits"))
-            .Sort(Builders<BsonDocument>.Sort.Descending("credits"))
-            .Limit(10)
-            .ToListAsync();
+        topUsers = await UserDataManager.GetTopUsersLeaderboardAsync(10);
     }
     catch (Exception ex)
     {
@@ -175,18 +169,14 @@ public async Task Leaderboard()
         return;
     }
 
-    if (!topUsersDocs.Any())
+    if (!topUsers.Any())
     {
         await FollowupAsync("📉 Brak danych o użytkownikach.");
         return;
     }
 
-    var desc = string.Join("\n", topUsersDocs.Select((doc, i) =>
-    {
-        var userId = doc["userId"].AsUInt64;
-        var credits = doc["credits"].AsInt32;
-        return $"**#{i + 1}** <@{userId}> — 💰 {credits} kredytów";
-    }));
+    var desc = string.Join("\n", topUsers.Select((u, i) =>
+        $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
 
     var embed = new EmbedBuilder()
         .WithTitle("🏆 Tablica Najbogatszych 🏆")
@@ -197,6 +187,7 @@ public async Task Leaderboard()
 
     await FollowupAsync(embed: embed);
 }
+
         [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
         public async Task Daily()
         {
@@ -264,4 +255,5 @@ public async Task Leaderboard()
         }
     }
 }
+
 
