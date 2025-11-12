@@ -106,7 +106,10 @@ public static class UserDataManager
 
 public class UserData
 {
-    // Removed BsonId completely
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
+    public string Id { get; set; } = ObjectId.GenerateNewId().ToString(); // <-- CHANGE HERE
+
     [BsonElement("userId")]
     public ulong UserId { get; set; }
 
