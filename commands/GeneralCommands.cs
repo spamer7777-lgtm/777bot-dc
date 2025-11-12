@@ -155,9 +155,18 @@ namespace Commands
 [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
 public async Task Leaderboard()
 {
-    await DeferAsync(); // defer the response immediately
+    await DeferAsync(); // tell Discord we are processing
 
-    var topUsers = await UserDataManager.GetTopUsersAsync(10);
+    List<UserData> topUsers;
+    try
+    {
+        topUsers = await UserDataManager.GetTopUsersAsync(10); // await async method
+    }
+    catch (Exception ex)
+    {
+        await FollowupAsync($"❌ Błąd podczas pobierania danych: {ex.Message}");
+        return;
+    }
 
     if (!topUsers.Any())
     {
@@ -243,4 +252,5 @@ public async Task Leaderboard()
         }
     }
 }
+
 
