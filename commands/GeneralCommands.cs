@@ -174,6 +174,43 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
+        [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
+public async Task Daily()
+        {
+    var userId = Context.User.Id;
+    var user = UserDataManager.GetUser(userId);
+
+    if (!UserDataManager.CanClaimDaily(userId))
+        {
+        var remaining = UserDataManager.GetDailyCooldownRemaining(userId);
+        var embedCooldown = new EmbedBuilder()
+            .WithTitle("⏰ Już odebrałeś/aś dzienną nagrodę!")
+            .WithDescription($"Spróbuj ponownie za **{remaining.Hours}h {remaining.Minutes}m**.")
+            .WithColor(Color.Orange)
+            .WithFooter("Odbierz swoją nagrodę jutro 🎁")
+            .Build();
+
+        await RespondAsync(embed: embedCooldown, ephemeral: true);
+        return;
+        }
+
+    var rand = new Random();
+    int reward = rand.Next(100, 251); // losowo 100–250
+    UserDataManager.AddCredits(userId, reward);
+    UserDataManager.SetDailyClaim(userId);
+
+    var newBalance = UserDataManager.GetUser(userId).Credits;
+
+    var embed = new EmbedBuilder()
+        .WithTitle("🎁 Dzienna nagroda!")
+        .WithDescription($"Odebrałeś/aś **{reward}** kredytów.\n💰 Nowy balans: **{newBalance}** kredytów.")
+        .WithColor(Color.Gold)
+        .WithFooter($"Dziękujemy za grę — wróć jutro po kolejne nagrody!")
+        .Build();
+
+    await RespondAsync(embed: embed);
+        }
+
         // 🛠️ Komenda administratora
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -207,3 +244,4 @@ namespace Commands
         }
     }
 }
+
