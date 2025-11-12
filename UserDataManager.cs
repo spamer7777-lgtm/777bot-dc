@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 
@@ -108,9 +106,7 @@ public static class UserDataManager
 
 public class UserData
 {
-    [BsonId]
-    public ObjectId Id { get; set; }
-
+    // Removed BsonId completely
     [BsonElement("userId")]
     public ulong UserId { get; set; }
 
