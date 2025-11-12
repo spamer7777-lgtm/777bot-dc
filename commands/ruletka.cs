@@ -22,7 +22,7 @@ namespace Commands
             ("🟩", 0)
         };
 
-        [SlashCommand("roulette", "Zagraj w interaktywną ruletkę!")]
+        [SlashCommand("ruletka", "Zagraj w interaktywną ruletkę!")]
         public async Task Roulette([Summary("amount", "Kwota zakładu")] int amount)
         {
             if (amount <= 0)
