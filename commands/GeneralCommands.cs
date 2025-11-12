@@ -153,41 +153,50 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
-        public async Task Leaderboard()
-        {
-            await DeferAsync();
+[SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
+public async Task Leaderboard()
+{
+    await DeferAsync(); // tell Discord we are processing
 
-            List<UserData> topUsers;
-            try
-            {
-                topUsers = await UserDataManager.GetTopUsersAsync(10);
-            }
-            catch (Exception ex)
-            {
-                await FollowupAsync($"❌ Błąd podczas pobierania danych: {ex.Message}");
-                return;
-            }
+    List<BsonDocument> topUsersDocs;
+    try
+    {
+        // Only fetch the fields we need, ignore _id
+        topUsersDocs = await UserDataManager.Users
+            .Find(FilterDefinition<BsonDocument>.Empty)
+            .Project(Builders<BsonDocument>.Projection.Include("userId").Include("credits"))
+            .Sort(Builders<BsonDocument>.Sort.Descending("credits"))
+            .Limit(10)
+            .ToListAsync();
+    }
+    catch (Exception ex)
+    {
+        await FollowupAsync($"❌ Błąd podczas pobierania danych: {ex.Message}");
+        return;
+    }
 
-            if (!topUsers.Any())
-            {
-                await FollowupAsync("📉 Brak danych o użytkownikach.");
-                return;
-            }
+    if (!topUsersDocs.Any())
+    {
+        await FollowupAsync("📉 Brak danych o użytkownikach.");
+        return;
+    }
 
-            var desc = string.Join("\n", topUsers.Select((u, i) =>
-                $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
+    var desc = string.Join("\n", topUsersDocs.Select((doc, i) =>
+    {
+        var userId = doc["userId"].AsUInt64;
+        var credits = doc["credits"].AsInt32;
+        return $"**#{i + 1}** <@{userId}> — 💰 {credits} kredytów";
+    }));
 
-            var embed = new EmbedBuilder()
-                .WithTitle("🏆 Tablica Najbogatszych 🏆")
-                .WithDescription(desc)
-                .WithColor(Color.Gold)
-                .WithFooter("Czy uda ci się wejść do TOP 10?")
-                .Build();
+    var embed = new EmbedBuilder()
+        .WithTitle("🏆 Tablica Najbogatszych 🏆")
+        .WithDescription(desc)
+        .WithColor(Color.Gold)
+        .WithFooter("Czy uda ci się wejść do TOP 10?")
+        .Build();
 
-            await FollowupAsync(embed: embed);
-        }
-
+    await FollowupAsync(embed: embed);
+}
         [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
         public async Task Daily()
         {
@@ -255,3 +264,4 @@ namespace Commands
         }
     }
 }
+
