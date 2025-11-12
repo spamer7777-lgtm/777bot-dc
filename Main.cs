@@ -8,7 +8,6 @@ using System.Threading;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Performance;
 
 public static class Bot
 {
@@ -41,6 +40,11 @@ public static class Bot
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
 
+    // ----------------- MESSAGE REWARD CONFIG -----------------
+    private static readonly TimeSpan MessageRewardCooldown = TimeSpan.FromMinutes(5);
+    private static readonly int MinMessageReward = 5;
+    private static readonly int MaxMessageReward = 15;
+
     public static async Task Main()
     {
         if (Token is null)
@@ -61,6 +65,18 @@ public static class Bot
         if (message.Author is not SocketGuildUser user) return;
         if (message.Attachments.Any()) return;
 
+        // ----------------- MESSAGE REWARD LOGIC -----------------
+        if (await UserDataManager.CanEarnMessageRewardAsync(user.Id, MessageRewardCooldown))
+        {
+            var rand = new Random();
+            int reward = rand.Next(MinMessageReward, MaxMessageReward + 1);
+            await UserDataManager.AddCreditsAsync(user.Id, reward);
+            await UserDataManager.SetMessageRewardAsync(user.Id);
+
+            Console.WriteLine($"[MESSAGE REWARD] Gave {reward} credits to {user.Username} for chatting.");
+        }
+
+        // ----------------- EXISTING TRIGGERS -----------------
         string contentLower = message.Content.ToLowerInvariant();
         string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
