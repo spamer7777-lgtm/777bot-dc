@@ -95,13 +95,11 @@ public static class UserDataManager
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
-    // ------------------ LEADERBOARD ------------------
-
+// ------------------ LEADERBOARD ------------------
 public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
 {
     var topList = new List<(ulong, int)>();
 
-    // Use projection to safely get userId and credits, ignoring _id
     var projection = Builders<UserData>.Projection.Include("userId").Include("credits");
     var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
                             .Project(projection)
@@ -111,7 +109,6 @@ public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboa
 
     foreach (var doc in cursor)
     {
-        // Convert userId safely
         if (doc.Contains("userId") && doc["userId"].IsInt64)
         {
             ulong uid = (ulong)doc["userId"].AsInt64;
