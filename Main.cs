@@ -23,7 +23,6 @@ public static class Bot
     private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
 
-    // 🟢 Nowy globalny HttpClient z poprawnymi nagłówkami
     public static readonly HttpClient Http = new HttpClient(new HttpClientHandler
     {
         AllowAutoRedirect = true,
@@ -33,17 +32,11 @@ public static class Bot
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    // 🟢 Statyczny konstruktor — dodaje nagłówki
     static Bot()
     {
         Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DiscordBot/1.0");
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
-
-    // ----------------- MESSAGE REWARD CONFIG -----------------
-    private static readonly TimeSpan MessageRewardCooldown = TimeSpan.FromMinutes(5);
-    private static readonly int MinMessageReward = 5;
-    private static readonly int MaxMessageReward = 15;
 
     public static async Task Main()
     {
@@ -65,18 +58,6 @@ public static class Bot
         if (message.Author is not SocketGuildUser user) return;
         if (message.Attachments.Any()) return;
 
-        // ----------------- MESSAGE REWARD LOGIC -----------------
-        if (await UserDataManager.CanEarnMessageRewardAsync(user.Id, MessageRewardCooldown))
-        {
-            var rand = new Random();
-            int reward = rand.Next(MinMessageReward, MaxMessageReward + 1);
-            await UserDataManager.AddCreditsAsync(user.Id, reward);
-            await UserDataManager.SetMessageRewardAsync(user.Id);
-
-            Console.WriteLine($"[MESSAGE REWARD] Gave {reward} credits to {user.Username} for chatting.");
-        }
-
-        // ----------------- EXISTING TRIGGERS -----------------
         string contentLower = message.Content.ToLowerInvariant();
         string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
@@ -210,9 +191,8 @@ public static class Bot
             await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
         else
         {
-            var cpuUsage = await Stats.GetCpuUsageForProcess();
-            var ramUsage = Stats.GetRamUsageForProcess();
-            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | CPU: {cpuUsage}% | RAM: {ramUsage}% | Command: {info.Name}");
+            // Removed Stats references, just log command
+            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | Command executed: {info.Name}");
         }
     }
 
