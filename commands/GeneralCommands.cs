@@ -44,15 +44,13 @@ namespace Commands
             const int reward = 50;
 
             var user = UserDataManager.GetUser(Context.User.Id);
-
             if (user.Credits < cost)
             {
-                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Aktualnie masz ich: {user.Credits}.");
+                await RespondAsync($"🚫 Potrzebujesz {cost} kredytów, żeby zagrać. Masz tylko {user.Credits}.");
                 return;
             }
 
             await DeferAsync();
-
             UserDataManager.RemoveCredits(Context.User.Id, cost);
 
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
@@ -66,15 +64,12 @@ namespace Commands
                 .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
                 .Build();
 
-            var msg = await FollowupAsync(embed: embed, ephemeral: false) as IUserMessage;
+            var msg = await FollowupAsync(embed: embed) as IUserMessage;
             if (msg == null) return;
 
             for (int i = 0; i < 6; i++)
             {
-                var spin = Enumerable.Range(0, 3)
-                    .Select(_ => icons[rand.Next(icons.Length)])
-                    .ToArray();
-
+                var spin = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
                 var effect1 = effects[rand.Next(effects.Length)];
                 var effect2 = effects[rand.Next(effects.Length)];
 
@@ -89,10 +84,7 @@ namespace Commands
                 await Task.Delay(250);
             }
 
-            var finalResult = Enumerable.Range(0, 3)
-                .Select(_ => icons[rand.Next(icons.Length)])
-                .ToArray();
-
+            var finalResult = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
             bool win = finalResult.Distinct().Count() == 1;
             if (win) UserDataManager.AddCredits(Context.User.Id, reward);
 
@@ -108,7 +100,6 @@ namespace Commands
             await msg.ModifyAsync(m => m.Embed = embed);
         }
 
-        // 🎲 Bet Command
         [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
         public async Task Bet([Summary("amount", "Kwota, którą chcesz postawić.")] int amount)
         {
@@ -136,15 +127,13 @@ namespace Commands
             if (win)
             {
                 UserDataManager.AddCredits(Context.User.Id, amount);
-                description = $"Twoje **{amount}** kredytów zostało podwojone! 💸\n\n" +
-                              $"💳 Nowy balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
+                description = $"Twoje **{amount}** kredytów zostało podwojone! 💸\n💳 Nowy balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
                 color = Color.Gold;
             }
             else
             {
                 UserDataManager.RemoveCredits(Context.User.Id, amount);
-                description = $"Straciłeś/aś **{amount}** kredytów. 😔\n\n" +
-                              $"💳 Aktualny balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
+                description = $"Straciłeś/aś **{amount}** kredytów. 😔\n💳 Aktualny balans: **{UserDataManager.GetUser(Context.User.Id).Credits}**";
                 color = Color.DarkRed;
             }
 
@@ -160,12 +149,11 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        // 🏆 Leaderboard Command
         [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
         public async Task Leaderboard()
         {
             var topUsers = UserDataManager.GetTopUsers(10);
-            if (topUsers == null || topUsers.Count == 0)
+            if (!topUsers.Any())
             {
                 await RespondAsync("📉 Brak danych o użytkownikach.");
                 return;
@@ -184,12 +172,10 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        // 🎁 Daily (/dzienne) Command
         [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
         public async Task Daily()
         {
             var userId = Context.User.Id;
-
             if (!UserDataManager.CanClaimDaily(userId))
             {
                 var remaining = UserDataManager.GetDailyCooldownRemaining(userId);
@@ -205,7 +191,7 @@ namespace Commands
             }
 
             var rand = new Random();
-            int reward = rand.Next(100, 251); // 100–250 kredytów
+            int reward = rand.Next(100, 251);
             UserDataManager.AddCredits(userId, reward);
             UserDataManager.SetDailyClaim(userId);
 
@@ -213,7 +199,7 @@ namespace Commands
 
             var embed = new EmbedBuilder()
                 .WithTitle("🎁 Dzienna nagroda!")
-                .WithDescription($"Odebrałeś/aś **{reward}** kredytów.\n💰 Nowy balans: **{newBalance}** kredytów.")
+                .WithDescription($"Odebrałeś/aś **{reward}** kredytów.\n💰 Nowy balans: **{newBalance}**")
                 .WithColor(Color.Gold)
                 .WithFooter("Dziękujemy za grę — wróć jutro po kolejne nagrody!")
                 .Build();
@@ -221,10 +207,11 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        // 🛠️ Grant Credits Command (Admin)
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
-        public async Task GrantCredits([Summary("user")] IUser target, [Summary("amount")] int amount)
+        public async Task GrantCredits(
+            [Summary("user", "Użytkownik, któremu chcesz dodać kredyty.")] IUser target,
+            [Summary("amount", "Liczba kredytów do dodania.")] int amount)
         {
             ulong ownerId = 299929951451217921;
 
@@ -243,7 +230,10 @@ namespace Commands
             UserDataManager.AddCredits(target.Id, amount);
             var newBalance = UserDataManager.GetUser(target.Id).Credits;
 
-            await RespondAsync($"✅ Dodano **{amount}** kredytów użytkownikowi {target.Mention}. Nowy balans: **{newBalance}** kredytów.", ephemeral: true);
+            await RespondAsync(
+                $"✅ Dodano **{amount}** kredytów użytkownikowi {target.Mention}. Nowy balans: **{newBalance}**",
+                ephemeral: true
+            );
         }
     }
 }
