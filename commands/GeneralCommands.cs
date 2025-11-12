@@ -230,96 +230,6 @@ public async Task Leaderboard()
 
             await FollowupAsync(embed: embed);
         }
-[SlashCommand("roulette_full", "Zagraj w pełną ruletkę (0-36)!")]
-        public async Task RouletteFull([Summary("bet", "Kwota, którą chcesz postawić")] int bet)
-        {
-            if (bet <= 0)
-            {
-                await RespondAsync("⚠️ Podaj kwotę większą niż 0.", ephemeral: true);
-                return;
-            }
-
-            var user = await UserDataManager.GetUserAsync(Context.User.Id);
-            if (user.Credits < bet)
-            {
-                await RespondAsync($"🚫 Nie masz wystarczająco kredytów! Masz tylko {user.Credits}.", ephemeral: true);
-                return;
-            }
-
-            await UserDataManager.RemoveCreditsAsync(Context.User.Id, bet);
-
-            // Build the 0-36 roulette number buttons
-            var builder = new ComponentBuilder();
-            int rowCount = 0;
-            for (int i = 0; i <= 36; i++)
-            {
-                string color = i == 0 ? "🟢" : (i % 2 == 0 ? "⚫" : "🔴");
-                string label = $"{color} {i}";
-                builder.WithButton(label, $"roulette_number_{i}_{Context.User.Id}_{bet}", ButtonStyle.Secondary);
-
-                rowCount++;
-                if (rowCount % 5 == 0 && i != 36) builder.WithRow(); // Discord allows max 5 buttons per row
-            }
-
-            var embed = new EmbedBuilder()
-                .WithTitle("🎡 Pełna ruletka 0-36 🎡")
-                .WithDescription($"Twój zakład: **{bet} kredytów**\nKliknij numer, na który chcesz postawić!")
-                .WithColor(Color.Purple)
-                .Build();
-
-            await RespondAsync(embed: embed, components: builder.Build());
-        }
-
-        [ComponentInteraction("roulette_number_*")]
-        public async Task RouletteFullClick(string customId)
-        {
-            await DeferAsync();
-
-            // Format: roulette_number_<number>_<userId>_<bet>
-            var parts = customId.Split('_');
-            if (parts.Length != 5) return;
-
-            int chosenNumber = int.Parse(parts[2]);
-            ulong userId = ulong.Parse(parts[3]);
-            int bet = int.Parse(parts[4]);
-
-            if (Context.User.Id != userId)
-            {
-                await FollowupAsync("🚫 To nie Twój zakład!", ephemeral: true);
-                return;
-            }
-
-            var user = await UserDataManager.GetUserAsync(userId);
-
-            // Spin roulette
-            int winningNumber = rand.Next(0, 37);
-            string winningColor = winningNumber == 0 ? "green" : (winningNumber % 2 == 0 ? "black" : "red");
-            string chosenColor = chosenNumber == 0 ? "green" : (chosenNumber % 2 == 0 ? "black" : "red");
-
-            int reward = 0;
-            bool win = false;
-
-            if (chosenNumber == winningNumber)
-            {
-                reward = bet * 35; // Standard roulette payout
-                win = true;
-            }
-
-            if (win) await UserDataManager.AddCreditsAsync(userId, reward);
-
-            int newBalance = (await UserDataManager.GetUserAsync(userId)).Credits;
-
-            var embed = new EmbedBuilder()
-                .WithTitle(win ? "🎉 WYGRAŁEŚ W PEŁNEJ ROULETTE!" : "😢 Przegrałeś w ruletkę!")
-                .WithDescription($"🎯 Wylosowana liczba: **{winningNumber}** ({winningColor})\n" +
-                                 (win ? $"💰 Wygrałeś **{reward} kredytów!**" : $"💸 Straciłeś **{bet} kredytów.**") +
-                                 $"\n💳 Nowy balans: **{newBalance}**")
-                .WithColor(win ? Color.Gold : Color.DarkRed)
-                .Build();
-
-            await FollowupAsync(embed: embed);
-        }
-    
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task GrantCredits(
@@ -350,6 +260,7 @@ public async Task Leaderboard()
         }
     }
 }
+
 
 
 
