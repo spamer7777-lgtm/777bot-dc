@@ -177,9 +177,9 @@ public static class Bot
 
         await Service.AddModulesAsync(typeof(Bot).Assembly, null);
 
-        ulong guildId = 1222629512056148008; // <-- replace with your Discord server ID
-        await Service.RegisterCommandsToGuildAsync(guildId);
-        //await Service.RegisterCommandsGloballyAsync();
+        //ulong guildId = 1222629512056148008; // <-- replace with your Discord server ID
+        //await Service.RegisterCommandsToGuildAsync(guildId);
+        await Service.RegisterCommandsGloballyAsync();
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
@@ -255,5 +255,6 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
