@@ -95,21 +95,34 @@ public static class UserDataManager
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
-    // ------------------ LEADERBOARD ------------------
+    // ------------------ LEADERBOARD (SAFE) ------------------
 
-    public static async Task<List<UserData>> GetTopUsersAsync(int count)
+    public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
     {
-        return await Users.Find(FilterDefinition<UserData>.Empty)
-                          .SortByDescending(u => u.Credits)
-                          .Limit(count)
-                          .ToListAsync();
+        // Only fetch fields we need: userId and credits
+        var projection = Builders<UserData>.Projection.Include(u => u.UserId).Include(u => u.Credits);
+        
+        var topDocs = await Users
+            .Find(FilterDefinition<UserData>.Empty)
+            .Project(projection)
+            .Sort(Builders<UserData>.Sort.Descending("credits"))
+            .Limit(count)
+            .ToListAsync();
+
+        // Convert to tuples
+        return topDocs.Select(d => (
+            UserId: d["userId"].ToUInt64(),
+            Credits: d["credits"].ToInt32()
+        )).ToList();
     }
 }
+
+// ------------------ USER MODEL ------------------
 
 public class UserData
 {
     [BsonId]
-    public ObjectId Id { get; set; }
+    public ObjectId Id { get; set; }  // Keep ObjectId, do NOT change
 
     [BsonElement("userId")]
     public ulong UserId { get; set; }
