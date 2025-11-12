@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -60,6 +61,18 @@ public static class UserDataManager
         user.Credits -= amount;
         Save();
         return true;
+    }
+
+    // 🏆 Helper: Get top users by credits
+    public static List<UserData> GetTopUsers(int count)
+    {
+        lock (LockObj)
+        {
+            return Users.Values
+                .OrderByDescending(u => u.Credits)
+                .Take(count)
+                .ToList();
+        }
     }
 }
 
