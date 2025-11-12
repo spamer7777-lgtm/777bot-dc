@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 public static class UserDataManager
 {
@@ -39,7 +38,12 @@ public static class UserDataManager
     {
         if (!Users.ContainsKey(userId))
         {
-            Users[userId] = new UserData { UserId = userId, Credits = 100 }; // default 100 credits
+            Users[userId] = new UserData
+            {
+                UserId = userId,
+                Credits = 100, // default start
+                LastDailyClaim = null
+            };
             Save();
         }
         return Users[userId];
@@ -74,10 +78,41 @@ public static class UserDataManager
                 .ToList();
         }
     }
+
+    // 🎁 DAILY REWARD HELPERS
+
+    public static bool CanClaimDaily(ulong userId)
+    {
+        var user = GetUser(userId);
+        if (user.LastDailyClaim == null)
+            return true;
+
+        return (DateTime.UtcNow - user.LastDailyClaim.Value).TotalHours >= 24;
+    }
+
+    public static TimeSpan GetDailyCooldownRemaining(ulong userId)
+    {
+        var user = GetUser(userId);
+        if (user.LastDailyClaim == null)
+            return TimeSpan.Zero;
+
+        var nextClaim = user.LastDailyClaim.Value.AddHours(24);
+        return nextClaim - DateTime.UtcNow;
+    }
+
+    public static void SetDailyClaim(ulong userId)
+    {
+        var user = GetUser(userId);
+        user.LastDailyClaim = DateTime.UtcNow;
+        Save();
+    }
 }
 
 public class UserData
 {
     public ulong UserId { get; set; }
     public int Credits { get; set; }
+
+    // 🕒 Track when user last claimed daily reward
+    public DateTime? LastDailyClaim { get; set; }
 }
