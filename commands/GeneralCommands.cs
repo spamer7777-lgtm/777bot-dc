@@ -151,7 +151,7 @@ public async Task Slots(
                 .WithTitle($"{resultEmoji} {title}")
                 .WithDescription(description)
                 .WithColor(color)
-                .WithThumbnailUrl("https://e7.pngegg.com/pngimages/542/1006/png-clipart-poker-chips-illustration-blackjack-online-casino-online-poker-roulette-bargaining-chip-game-electronics-thumbnail.png")
+                .WithThumbnailUrl("https://i.imgur.com/DKOV6ZU.png")
                 .WithFooter($"Zakręcił: {Context.User.Username}", Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
                 .WithCurrentTimestamp()
                 .Build();
@@ -260,6 +260,7 @@ public async Task Leaderboard()
         }
     }
 }
+
 
 
 
