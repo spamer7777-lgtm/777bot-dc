@@ -54,7 +54,6 @@ namespace Commands
 
             await DeferAsync();
             await UserDataManager.RemoveCreditsAsync(Context.User.Id, cost);
-            user.Credits -= cost; // update local variable
 
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
             string[] effects = { "🔔", "✨", "💥", "🎵", "⭐", "⚡" };
@@ -80,7 +79,7 @@ namespace Commands
                     .WithTitle($"{effect2} 🎰 777 Slots 🎰 {effect1}")
                     .WithDescription($"[{spin[0]}][{spin[1]}][{spin[2]}] Kręcimy...")
                     .WithColor(Color.DarkGrey)
-                    .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
+                    .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
                     .Build();
 
                 await msg.ModifyAsync(m => m.Embed = embed);
@@ -89,11 +88,7 @@ namespace Commands
 
             var finalResult = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
             bool win = finalResult.Distinct().Count() == 1;
-            if (win)
-            {
-                await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
-                user.Credits += reward;
-            }
+            if (win) await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
 
             embed = new EmbedBuilder()
                 .WithTitle("🎰 777 Slots 🎰")
@@ -101,7 +96,7 @@ namespace Commands
                                  (win ? $"💰 **JACKPOT! WYGRAŁEŚ/AŚ {reward} kredytów!**" :
                                         $"😢 Przegrałeś/aś {cost} kredytów. Następnym razem lepiej!"))
                 .WithColor(win ? Color.Gold : Color.DarkGrey)
-                .WithFooter($"Twój nowy balans: {user.Credits} kredytów")
+                .WithFooter($"Twój nowy balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits} kredytów")
                 .Build();
 
             await msg.ModifyAsync(m => m.Embed = embed);
@@ -126,23 +121,30 @@ namespace Commands
             var rand = new Random();
             bool win = rand.NextDouble() < 0.5;
 
+            string resultEmoji = win ? "💰" : "💀";
+            string title = win ? "🎉 WYGRAŁEŚ!" : "😢 PRZEGRAŁEŚ!";
+            string description;
+            Color color;
+
             if (win)
             {
                 await UserDataManager.AddCreditsAsync(Context.User.Id, amount);
-                user.Credits += amount;
+                var newBalance = (await UserDataManager.GetUserAsync(Context.User.Id)).Credits;
+                description = $"Twoje **{amount}** kredytów zostało podwojone! 💸\n💳 Nowy balans: **{newBalance}**";
+                color = Color.Gold;
             }
             else
             {
                 await UserDataManager.RemoveCreditsAsync(Context.User.Id, amount);
-                user.Credits -= amount;
+                var newBalance = (await UserDataManager.GetUserAsync(Context.User.Id)).Credits;
+                description = $"Straciłeś/aś **{amount}** kredytów. 😔\n💳 Aktualny balans: **{newBalance}**";
+                color = Color.DarkRed;
             }
 
             var embed = new EmbedBuilder()
-                .WithTitle(win ? "🎉 WYGRAŁEŚ!" : "😢 PRZEGRAŁEŚ!")
-                .WithDescription(win 
-                    ? $"Twoje **{amount}** kredytów zostało podwojone! 💸\n💳 Nowy balans: **{user.Credits}**"
-                    : $"Straciłeś/aś **{amount}** kredytów 😔\n💳 Aktualny balans: **{user.Credits}**")
-                .WithColor(win ? Color.Gold : Color.DarkRed)
+                .WithTitle($"{resultEmoji} {title}")
+                .WithDescription(description)
+                .WithColor(color)
                 .WithThumbnailUrl("https://e7.pngegg.com/pngimages/542/1006/png-clipart-poker-chips-illustration-blackjack-online-casino-online-poker-roulette-bargaining-chip-game-electronics-thumbnail.png")
                 .WithFooter($"Zakręcił: {Context.User.Username}", Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
                 .WithCurrentTimestamp()
@@ -167,13 +169,13 @@ namespace Commands
                 return;
             }
 
-            if (topUsers.Count == 0)
+            if (!topUsers.Any())
             {
                 await FollowupAsync("📉 Brak danych o użytkownikach.");
                 return;
             }
 
-            string desc = string.Join("\n", topUsers.Select((u, i) =>
+            var desc = string.Join("\n", topUsers.Select((u, i) =>
                 $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
 
             var embed = new EmbedBuilder()
@@ -189,6 +191,8 @@ namespace Commands
         [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
         public async Task Daily()
         {
+            await DeferAsync();
+
             var userId = Context.User.Id;
             if (!await UserDataManager.CanClaimDailyAsync(userId))
             {
@@ -200,7 +204,7 @@ namespace Commands
                     .WithFooter("Odbierz swoją nagrodę jutro 🎁")
                     .Build();
 
-                await RespondAsync(embed: embedCooldown, ephemeral: true);
+                await FollowupAsync(embed: embedCooldown, ephemeral: true);
                 return;
             }
 
@@ -209,15 +213,16 @@ namespace Commands
             await UserDataManager.AddCreditsAsync(userId, reward);
             await UserDataManager.SetDailyClaimAsync(userId);
 
-            var user = await UserDataManager.GetUserAsync(userId);
+            var newBalance = (await UserDataManager.GetUserAsync(userId)).Credits;
+
             var embed = new EmbedBuilder()
                 .WithTitle("🎁 Dzienna nagroda!")
-                .WithDescription($"Odebrałeś/aś **{reward}** kredytów.\n💰 Nowy balans: **{user.Credits}**")
+                .WithDescription($"Odebrałeś/aś **{reward}** kredytów.\n💰 Nowy balans: **{newBalance}**")
                 .WithColor(Color.Gold)
                 .WithFooter("Dziękujemy za grę — wróć jutro po kolejne nagrody!")
                 .Build();
 
-            await RespondAsync(embed: embed);
+            await FollowupAsync(embed: embed);
         }
 
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
@@ -241,10 +246,10 @@ namespace Commands
             }
 
             await UserDataManager.AddCreditsAsync(target.Id, amount);
-            var user = await UserDataManager.GetUserAsync(target.Id);
+            var newBalance = (await UserDataManager.GetUserAsync(target.Id)).Credits;
 
             await RespondAsync(
-                $"✅ Dodano **{amount}** kredytów użytkownikowi {target.Mention}. Nowy balans: **{user.Credits}**",
+                $"✅ Dodano **{amount}** kredytów użytkownikowi {target.Mention}. Nowy balans: **{newBalance}**",
                 ephemeral: true
             );
         }
