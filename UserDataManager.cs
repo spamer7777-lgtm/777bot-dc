@@ -18,7 +18,6 @@ public static class UserDataManager
         if (string.IsNullOrEmpty(mongoUrl))
             throw new Exception("MONGO_URL is not set in environment variables.");
 
-        // Ensure authSource=admin is included
         if (!mongoUrl.Contains("authSource"))
             mongoUrl += "?authSource=admin";
 
@@ -26,7 +25,6 @@ public static class UserDataManager
         var database = client.GetDatabase(mongoDb);
         Users = database.GetCollection<UserData>("users");
 
-        // Test connection
         try
         {
             var count = Users.CountDocuments(FilterDefinition<UserData>.Empty);
@@ -37,8 +35,6 @@ public static class UserDataManager
             Console.WriteLine($"❌ MongoDB connection failed: {ex.Message}");
         }
     }
-
-    // ------------------ USER OPERATIONS ------------------
 
     public static async Task<UserData> GetUserAsync(ulong userId)
     {
@@ -66,27 +62,22 @@ public static class UserDataManager
     {
         var user = await GetUserAsync(userId);
         if (user.Credits < amount) return false;
-
         var update = Builders<UserData>.Update.Inc(u => u.Credits, -amount);
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
         return true;
     }
 
-    // ------------------ DAILY REWARD ------------------
-
     public static async Task<bool> CanClaimDailyAsync(ulong userId)
     {
         var user = await GetUserAsync(userId);
-        if (user.LastDailyClaim == null) return true;
-        return (DateTime.UtcNow - user.LastDailyClaim.Value).TotalHours >= 24;
+        return user.LastDailyClaim == null || (DateTime.UtcNow - user.LastDailyClaim.Value).TotalHours >= 24;
     }
 
     public static async Task<TimeSpan> GetDailyCooldownRemainingAsync(ulong userId)
     {
         var user = await GetUserAsync(userId);
         if (user.LastDailyClaim == null) return TimeSpan.Zero;
-        var nextClaim = user.LastDailyClaim.Value.AddHours(24);
-        return nextClaim - DateTime.UtcNow;
+        return user.LastDailyClaim.Value.AddHours(24) - DateTime.UtcNow;
     }
 
     public static async Task SetDailyClaimAsync(ulong userId)
@@ -95,32 +86,34 @@ public static class UserDataManager
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
-// ------------------ LEADERBOARD ------------------
-public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
-{
-    var topList = new List<(ulong, int)>();
-
-    var projection = Builders<UserData>.Projection.Include("userId").Include("credits");
-    var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
-                            .Project(projection)
-                            .Sort(Builders<UserData>.Sort.Descending("credits"))
-                            .Limit(count)
-                            .ToListAsync();
-
-    foreach (var doc in cursor)
+    // ------------------ LEADERBOARD ------------------
+    public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
     {
-        if (doc.Contains("userId") && doc["userId"].IsInt64)
-        {
-            ulong uid = (ulong)doc["userId"].AsInt64;
-            int credits = doc.Contains("credits") ? doc["credits"].AsInt32 : 0;
-            topList.Add((uid, credits));
-        }
-    }
+        var topList = new List<(ulong, int)>();
 
-    return topList;
+        // Project only the needed fields
+        var projection = Builders<UserData>.Projection.Include("userId").Include("credits");
+        var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
+                                .Project(projection)
+                                .Sort(Builders<UserData>.Sort.Descending("credits"))
+                                .Limit(count)
+                                .ToListAsync();
+
+        foreach (var doc in cursor)
+        {
+            if (doc.Contains("userId") && doc["userId"].IsInt64)
+            {
+                ulong uid = (ulong)doc["userId"].AsInt64;
+                int credits = doc.Contains("credits") ? doc["credits"].AsInt32 : 0;
+                topList.Add((uid, credits));
+            }
+        }
+
+        return topList;
+    }
 }
 
-
+// ------------------ USER DATA ------------------
 public class UserData
 {
     [BsonId]
