@@ -152,28 +152,31 @@ namespace Commands
             await RespondAsync(embed: embed);
         }
 
-        [SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
-        public async Task Leaderboard()
-        {
-            var topUsers = await UserDataManager.GetTopUsersAsync(10);
-            if (!topUsers.Any())
-            {
-                await RespondAsync("📉 Brak danych o użytkownikach.");
-                return;
-            }
+[SlashCommand("leaderboard", "Zobacz top 10 najbogatszych graczy!")]
+public async Task Leaderboard()
+{
+    await DeferAsync(); // defer the response immediately
 
-            var desc = string.Join("\n", topUsers.Select((u, i) =>
-                $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
+    var topUsers = await UserDataManager.GetTopUsersAsync(10);
 
-            var embed = new EmbedBuilder()
-                .WithTitle("🏆 Tablica Najbogatszych 🏆")
-                .WithDescription(desc)
-                .WithColor(Color.Gold)
-                .WithFooter("Czy uda ci się wejść do TOP 10?")
-                .Build();
+    if (!topUsers.Any())
+    {
+        await FollowupAsync("📉 Brak danych o użytkownikach.");
+        return;
+    }
 
-            await RespondAsync(embed: embed);
-        }
+    var desc = string.Join("\n", topUsers.Select((u, i) =>
+        $"**#{i + 1}** <@{u.UserId}> — 💰 {u.Credits} kredytów"));
+
+    var embed = new EmbedBuilder()
+        .WithTitle("🏆 Tablica Najbogatszych 🏆")
+        .WithDescription(desc)
+        .WithColor(Color.Gold)
+        .WithFooter("Czy uda ci się wejść do TOP 10?")
+        .Build();
+
+    await FollowupAsync(embed: embed);
+}
 
         [SlashCommand("dzienne", "Odbierz swoje dzienne kredyty!")]
         public async Task Daily()
@@ -240,3 +243,4 @@ namespace Commands
         }
     }
 }
+
