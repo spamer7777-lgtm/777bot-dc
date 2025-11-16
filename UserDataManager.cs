@@ -189,8 +189,8 @@ public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboa
     }
 
     return topList;
-}
-    
+    }
+}    
 // ------------------ USER DATA ------------------
 public class UserData
 {
