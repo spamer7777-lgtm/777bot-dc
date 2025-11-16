@@ -163,32 +163,34 @@ public static class UserDataManager
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
-    // ------------------ LEADERBOARD ------------------
-    public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
+// ------------------ LEADERBOARD ------------------
+public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
+{
+    var topList = new List<(ulong, int)>();
+
+    var projection = Builders<UserData>.Projection
+        .Include("userId")
+        .Include("credits");
+
+    var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
+                            .Project(projection)
+                            .Sort(Builders<UserData>.Sort.Descending("credits"))
+                            .Limit(count)
+                            .ToListAsync();
+
+    foreach (var doc in cursor)
     {
-        var topList = new List<(ulong, int)>();
-
-        var projection = Builders.UserData>.Projection.Include("userId").Include("credits");
-        var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
-                                .Project(projection)
-                                .Sort(Builders<UserData>.Sort.Descending("credits"))
-                                .Limit(count)
-                                .ToListAsync();
-
-        foreach (var doc in cursor)
+        if (doc.Contains("userId") && doc["userId"].IsInt64)
         {
-            if (doc.Contains("userId") && doc["userId"].IsInt64)
-            {
-                ulong uid = (ulong)doc["userId"].AsInt64;
-                int credits = doc.Contains("credits") ? doc["credits"].AsInt32 : 0;
-                topList.Add((uid, credits));
-            }
+            ulong uid = (ulong)doc["userId"].AsInt64;
+            int credits = doc.Contains("credits") ? doc["credits"].AsInt32 : 0;
+            topList.Add((uid, credits));
         }
-
-        return topList;
     }
-}
 
+    return topList;
+}
+    
 // ------------------ USER DATA ------------------
 public class UserData
 {
