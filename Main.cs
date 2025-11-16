@@ -106,6 +106,7 @@ public static class Bot
         int reward = rand.Next(creditAmountMin, creditAmountMax + 1);
 
         await UserDataManager.AddCreditsAsync(user.Id, reward);
+        await UserDataManager.AddExpAsync(user.Id, 5);
 
         messageCreditCooldowns[user.Id] = DateTime.UtcNow;
 
@@ -255,6 +256,7 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
 
