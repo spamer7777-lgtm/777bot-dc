@@ -61,7 +61,7 @@ public static class HttpApi
             }
 
             // (opcjonalne) zabezpieczenie API key
-            var expectedKey = Environment.GetEnvironmentVariable("API_KEY");
+            var expectedKey = Environment.GetEnvironmentVariable("Slots123_twojastara");
             if (!string.IsNullOrEmpty(expectedKey))
             {
                 var providedKey = req.Headers["X-Api-Key"];
