@@ -228,6 +228,28 @@ namespace Commands
 
             await FollowupAsync(embed: embed);
         }
+        
+[SlashCommand("profile", "Pokazuje twój profil oraz statystyki.")]
+public async Task Profile()
+{
+    await DeferAsync();
+
+    var data = await UserDataManager.GetUserAsync(Context.User.Id);
+    var bytes = await ProfileCardGenerator.GenerateAsync(Context.User, data);
+
+    var stream = new MemoryStream(bytes);
+    var file = new FileAttachment(stream, "profile.png");
+
+    var embed = new EmbedBuilder()
+        .WithTitle($"{Context.User.Username} — Profil")
+        .WithImageUrl("attachment://profile.png")
+        .WithColor(Color.Gold)
+        .Build();
+
+    await FollowupWithFileAsync(file, embed: embed);
+}
+
+
 
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
@@ -246,3 +268,4 @@ namespace Commands
         }
     }
 }
+
