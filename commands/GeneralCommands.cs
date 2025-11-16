@@ -230,42 +230,6 @@ namespace Commands
             await FollowupAsync(embed: embed);
         }
 
-          [SlashCommand("profile", "Wyświetl swoją kartę profilu.")]
-        public async Task Profile(
-            [Summary("użytkownik", "Kogo profil chcesz zobaczyć (domyślnie Ty).")] IUser target = null)
-        {
-            await DeferAsync();
-
-            var user = target ?? Context.User;
-
-            var data = await UserDataManager.GetUserAsync(user.Id);
-
-            // Potrzebujemy SocketUser do generatora
-            var socketUser = user as SocketUser
-                             ?? Context.Client.GetUser(user.Id)
-                             ?? Bot.Client.GetUser(user.Id) as SocketUser;
-
-            if (socketUser == null)
-            {
-                await FollowupAsync("❌ Nie udało się pobrać danych użytkownika.", ephemeral: true);
-                return;
-            }
-
-            var bytes = await ProfileCardGenerator.GenerateAsync(socketUser, data);
-
-            using var stream = new MemoryStream(bytes);
-            var attachment = new FileAttachment(stream, "profile.png");
-
-            var embed = new EmbedBuilder()
-                .WithTitle($"Profil — {user.Username}")
-                .WithImageUrl("attachment://profile.png")
-                .WithColor(Color.Gold)
-                .Build();
-
-            await FollowupWithFileAsync(attachment, embed: embed);
-        }
-        
-
         [SlashCommand("grantcredits", "Administrator: dodaj kredyty użytkownikowi (ukryta).")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task GrantCredits([Summary("user", "Użytkownik, któremu chcesz dodać kredyty.")] IUser target, [Summary("amount", "Liczba kredytów do dodania.")] int amount)
@@ -283,6 +247,7 @@ namespace Commands
         }
     }
 }
+
 
 
 
