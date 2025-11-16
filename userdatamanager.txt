@@ -36,6 +36,7 @@ public static class UserDataManager
         }
     }
 
+    // ------------------ USER OPERATIONS ------------------
     public static async Task<UserData> GetUserAsync(ulong userId)
     {
         var user = await Users.Find(u => u.UserId == userId).FirstOrDefaultAsync();
@@ -45,7 +46,8 @@ public static class UserDataManager
             {
                 UserId = userId,
                 Credits = 100,
-                LastDailyClaim = null
+                LastDailyClaim = null,
+                LastMessageReward = null
             };
             await Users.InsertOneAsync(user);
         }
@@ -67,6 +69,7 @@ public static class UserDataManager
         return true;
     }
 
+    // ------------------ DAILY REWARD ------------------
     public static async Task<bool> CanClaimDailyAsync(ulong userId)
     {
         var user = await GetUserAsync(userId);
@@ -86,12 +89,25 @@ public static class UserDataManager
         await Users.UpdateOneAsync(u => u.UserId == userId, update);
     }
 
+    // ------------------ MESSAGE REWARD ------------------
+    public static async Task<bool> CanEarnMessageRewardAsync(ulong userId, TimeSpan cooldown)
+    {
+        var user = await GetUserAsync(userId);
+        if (user.LastMessageReward == null) return true;
+        return (DateTime.UtcNow - user.LastMessageReward.Value) >= cooldown;
+    }
+
+    public static async Task SetMessageRewardAsync(ulong userId)
+    {
+        var update = Builders<UserData>.Update.Set(u => u.LastMessageReward, DateTime.UtcNow);
+        await Users.UpdateOneAsync(u => u.UserId == userId, update);
+    }
+
     // ------------------ LEADERBOARD ------------------
     public static async Task<List<(ulong UserId, int Credits)>> GetTopUsersLeaderboardAsync(int count)
     {
         var topList = new List<(ulong, int)>();
 
-        // Project only the needed fields
         var projection = Builders<UserData>.Projection.Include("userId").Include("credits");
         var cursor = await Users.Find(FilterDefinition<UserData>.Empty)
                                 .Project(projection)
@@ -127,4 +143,7 @@ public class UserData
 
     [BsonElement("lastDailyClaim")]
     public DateTime? LastDailyClaim { get; set; }
+
+    [BsonElement("lastMessageReward")]
+    public DateTime? LastMessageReward { get; set; } // for message reward cooldown
 }
