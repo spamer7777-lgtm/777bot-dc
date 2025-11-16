@@ -10,13 +10,9 @@
     <PackageReference Include="MongoDB.Driver" Version="2.27.0" />
     <PackageReference Include="DotNetEnv" Version="[2.5.0,)" />
 
+    <!-- SkiaSharp do generowania profili -->
+    <PackageReference Include="SkiaSharp" Version="2.88.3" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.3" />
   </ItemGroup>
 
-
 </Project>
-
-
-
-
-
-
