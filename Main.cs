@@ -56,6 +56,9 @@ public static class Bot
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
+
+        var cts = new CancellationTokenSource();
+        _ = HttpApi.StartAsync(cts.Token);
         
         await Client.LoginAsync(TokenType.Bot, Token);
         await Client.StartAsync();
@@ -259,6 +262,7 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
 
