@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>777 Slots</title>
+
+    <style>
+        body {
+            background: #1e1e1e;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 40px;
+        }
+
+        #game {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        #spin {
+            font-size: 28px;
+            padding: 12px 28px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            background: #ffcc00;
+            color: #222;
+            font-weight: bold;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🎰 777 Slot Machine</h1>
+
+    <div id="game">
+        <span id="r1">❔</span>
+        <span id="r2">❔</span>
+        <span id="r3">❔</span>
+    </div>
+
+    <button id="spin">🎰 Spin</button>
+
+    <p id="result"></p>
+
+    <!-- IMPORTANT: OFFICIAL DISCORD SDK -->
+    <script src="https://discord.com/sdks/embedded-app-sdk.js"></script>
+
+    <!-- Your logic -->
+    <script src="script.js"></script>
+
+</body>
+</html>
