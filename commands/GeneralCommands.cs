@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
@@ -10,136 +10,136 @@ namespace Commands
 {
     public class NoGroup : InteractionModuleBase<SocketInteractionContext>
     {
-        // ===========================
-        // GLOBAL STATE
-        // ===========================
-        private static readonly Dictionary<ulong, int> RouletteStakes = new();
+        // Stores roulette stakes (user → stawka)
+        public static Dictionary<ulong, int> RouletteStakes = new();
 
-        // Register roulette button handler ONCE
-        public override void OnModuleBuilding(InteractionService commandService)
-        {
-            Bot.Client.ButtonExecuted += HandleRouletteButtons;
-        }
-
-        // ===========================
-        // /ping
-        // ===========================
+        // -----------------------------
+        //       BASIC COMMANDS
+        // -----------------------------
+        
         [SlashCommand("ping", "Zobacz ping bota.")]
         public async Task Ping()
         {
-            await RespondAsync($"🏓 Pong! Ping: **{Bot.Client.Latency} ms**");
+            await RespondAsync($"🏓 Pong! Client latency: **{Bot.Client.Latency}**ms");
         }
 
-        // ===========================
-        // /hi
-        // ===========================
-        [SlashCommand("hi", "Powiedz Siemano!")]
+        [SlashCommand("hi", "Powiedz siemano użytkownikowi.")]
         public async Task Hi(IUser user)
         {
             await RespondAsync($"👋 Siemano {user.Mention}!");
         }
 
-        // ===========================
-        // /balance
-        // ===========================
-        [SlashCommand("balance", "Sprawdź kredyty.")]
+        [SlashCommand("balance", "Sprawdź swój balans.")]
         public async Task Balance()
         {
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
 
             var embed = new EmbedBuilder()
-                .WithTitle($"💰 Balans: {Context.User.Username}")
+                .WithTitle("💰 Twój balans")
                 .WithDescription($"Masz **{data.Credits}** kredytów.")
-                .WithColor(Color.Gold);
+                .WithColor(Color.Gold)
+                .Build();
 
-            await RespondAsync(embed: embed.Build());
+            await RespondAsync(embed: embed);
         }
 
-        // ===========================
-        // /slots
-        // ===========================
-        [SlashCommand("slots", "Zagraj w 777 Slots")]
+        // -----------------------------
+        //            SLOTS
+        // -----------------------------
+
+        [SlashCommand("slots", "Zagraj w jednorękiego bandytę.")]
         public async Task Slots(int amount = 10)
         {
             if (amount <= 0)
-                { await RespondAsync("⚠️ Stawka musi być większa niż 0.", ephemeral: true); return; }
+            {
+                await RespondAsync("Kwota musi być > 0", ephemeral: true);
+                return;
+            }
 
             var user = await UserDataManager.GetUserAsync(Context.User.Id);
             if (user.Credits < amount)
-                { await RespondAsync($"🚫 Masz tylko {user.Credits} kredytów!", ephemeral: true); return; }
+            {
+                await RespondAsync("Nie masz tyle kredytów!", ephemeral: true);
+                return;
+            }
 
             await DeferAsync();
             await UserDataManager.RemoveCreditsAsync(Context.User.Id, amount);
 
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
             var rand = new Random();
-            var msg = await FollowupAsync("🎰 Kręcimy...") as IUserMessage;
+
+            var msg = await FollowupAsync("Kręcimy...") as IUserMessage;
 
             for (int i = 0; i < 6; i++)
             {
-                var spin = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
-                await msg.ModifyAsync(m => m.Content = $"{spin[0]} {spin[1]} {spin[2]} – kręcimy...");
+                string roll = string.Join("", Enumerable.Range(0, 3).Select(_ => $"[{icons[rand.Next(icons.Length)]}]"));
+                await msg.ModifyAsync(m => m.Content = $"{roll} Kręcimy...");
                 await Task.Delay(200);
             }
 
-            var final = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
-            bool win = final.Distinct().Count() == 1;
+            string[] final = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
+
+            bool win = final[0] == final[1] && final[1] == final[2];
             int reward = win ? amount * 5 : 0;
 
             if (win)
                 await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
 
-            await msg.ModifyAsync(m => m.Content =
-                $"{final[0]} {final[1]} {final[2]}\n" +
-                (win ? $"🎉 WYGRAŁEŚ **{reward}**!" : $"😢 Straciłeś {amount}"));
+            string resultMsg = $"🎰 **{string.Join("", final.Select(f => $"[{f}]"))}**\n" +
+                               (win ? $"🎉 Wygrałeś **{reward}**!" : $"😢 Przegrałeś **{amount}**");
+
+            await msg.ModifyAsync(m => m.Content = resultMsg);
         }
 
-        // ===========================
-        // /ruletka (SAFE VERSION)
-        // ===========================
-        [SlashCommand("ruletka", "Postaw zakład na ruletkę!")]
+        // -----------------------------
+        //         RULETKA
+        // -----------------------------
+
+        [SlashCommand("ruletka", "Postaw zakład na kolor.")]
         public async Task Ruletka(int stawka)
         {
             if (stawka <= 0)
-                { await RespondAsync("⚠️ Stawka musi być > 0", ephemeral: true); return; }
+            {
+                await RespondAsync("Kwota musi być > 0", ephemeral: true);
+                return;
+            }
 
             var user = await UserDataManager.GetUserAsync(Context.User.Id);
             if (user.Credits < stawka)
-                { await RespondAsync($"🚫 Masz tylko {user.Credits} kredytów!", ephemeral: true); return; }
+            {
+                await RespondAsync("Nie masz tyle kredytów!", ephemeral: true);
+                return;
+            }
 
             RouletteStakes[Context.User.Id] = stawka;
-            await UserDataManager.RemoveCreditsAsync(Context.User.Id, stawka);
 
-            var components = new ComponentBuilder()
+            var buttons = new ComponentBuilder()
                 .WithButton("🔴 Czerwony", "roulette_red", ButtonStyle.Danger)
                 .WithButton("⚫ Czarny", "roulette_black", ButtonStyle.Secondary)
                 .WithButton("🟩 Zielony (0)", "roulette_green", ButtonStyle.Success);
 
-            var embed = new EmbedBuilder()
-                .WithTitle("🎡 Ruletka")
-                .WithDescription($"Stawka: **{stawka}**\nWybierz kolor ⬇️")
-                .WithColor(Color.DarkTeal);
-
-            await RespondAsync(embed: embed.Build(), components: components.Build());
+            await RespondAsync(
+                $"🎡 Postawiłeś **{stawka}**. Wybierz kolor:",
+                components: buttons.Build()
+            );
         }
 
-        // ===========================
-        // GLOBAL BUTTON HANDLER
-        // ===========================
-        private async Task HandleRouletteButtons(SocketMessageComponent component)
+        // STATIC handler registered in Main.cs
+        public static async Task HandleRouletteButtonsStatic(SocketMessageComponent component)
         {
             if (!component.Data.CustomId.StartsWith("roulette_"))
                 return;
 
-            await component.DeferAsync();
+            ulong userId = component.User.Id;
 
-            ulong uid = component.User.Id;
-
-            if (!RouletteStakes.TryGetValue(uid, out int stawka))
+            if (!RouletteStakes.TryGetValue(userId, out int stawka))
             {
-                await component.FollowupAsync("⚠️ Nie masz aktywnej ruletki!", ephemeral: true);
+                await component.RespondAsync("Nie masz aktywnej ruletki!", ephemeral: true);
                 return;
             }
+
+            await component.DeferAsync();
 
             string choice = component.Data.CustomId.Replace("roulette_", "");
 
@@ -150,9 +150,9 @@ namespace Commands
                 finalNumber == 0 ? "green" :
                 finalNumber % 2 == 0 ? "black" : "red";
 
-            var msg = await component.FollowupAsync("🎡 Kula się kręci...") as IUserMessage;
+            var msg = await component.FollowupAsync("🎡 Kręcimy...") as IUserMessage;
 
-            foreach (var n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNumber))
+            foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNumber))
             {
                 string icon = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
                 await msg.ModifyAsync(m => m.Content = $"Kula: **{icon} {n}**");
@@ -166,129 +166,122 @@ namespace Commands
                 win ? stawka * 2 : 0;
 
             if (win)
-                await UserDataManager.AddCreditsAsync(uid, reward);
+                await UserDataManager.AddCreditsAsync(userId, reward);
+            else
+                await UserDataManager.RemoveCreditsAsync(userId, stawka);
 
-            RouletteStakes.Remove(uid);
+            RouletteStakes.Remove(userId);
 
             await msg.ModifyAsync(m => m.Content =
-                $"🎯 Wypadło **{finalColor.ToUpper()} ({finalNumber})**!\n" +
-                (win
-                    ? $"🎉 WYGRAŁEŚ **{reward}**!"
-                    : $"💀 Przegrałeś **{stawka}** kredytów."));
+                $"🎯 Wypadło **{finalColor} ({finalNumber})**!\n" +
+                (win ? $"🎉 Wygrałeś **{reward}**!" : $"💀 Przegrałeś **{stawka}**"));
         }
 
-        // ===========================
-        // /bet  ← FIXED + INCLUDED
-        // ===========================
-        [SlashCommand("bet", "Postaw zakład i spróbuj podwoić swoje kredyty!")]
+        // -----------------------------
+        //            BET
+        // -----------------------------
+
+        [SlashCommand("bet", "50/50 — podwój stawkę.")]
         public async Task Bet(int amount)
         {
             if (amount <= 0)
             {
-                await RespondAsync("⚠️ Stawka musi być > 0", ephemeral: true);
+                await RespondAsync("Kwota musi być > 0", ephemeral: true);
                 return;
             }
 
             var user = await UserDataManager.GetUserAsync(Context.User.Id);
             if (user.Credits < amount)
             {
-                await RespondAsync($"🚫 Masz tylko {user.Credits} kredytów!", ephemeral: true);
+                await RespondAsync("Nie masz tyle kredytów!", ephemeral: true);
                 return;
             }
 
-            bool win = new Random().NextDouble() < 0.5;
-            int winAmount = amount;
+            var rand = new Random();
+            bool win = rand.NextDouble() < 0.5;
 
             if (win)
-                await UserDataManager.AddCreditsAsync(Context.User.Id, winAmount);
+                await UserDataManager.AddCreditsAsync(Context.User.Id, amount);
             else
-                await UserDataManager.RemoveCreditsAsync(Context.User.Id, winAmount);
+                await UserDataManager.RemoveCreditsAsync(Context.User.Id, amount);
 
-            int newBalance = (await UserDataManager.GetUserAsync(Context.User.Id)).Credits;
+            var newData = await UserDataManager.GetUserAsync(Context.User.Id);
 
-            var embed = new EmbedBuilder()
-                .WithTitle(win ? "💰 WYGRAŁEŚ!" : "💀 PRZEGRAŁEŚ!")
-                .WithDescription(win
-                    ? $"Podwoiłeś stawkę i wygrałeś **{winAmount}** kredytów!\nNowy balans: **{newBalance}**"
-                    : $"Straciłeś **{amount}** kredytów.\nNowy balans: **{newBalance}**")
-                .WithColor(win ? Color.Gold : Color.Red)
-                .Build();
-
-            await RespondAsync(embed: embed);
+            await RespondAsync(
+                win ?
+                $"🎉 Wygrałeś! Zdobywasz {amount}. Nowy balans: {newData.Credits}" :
+                $"💀 Przegrałeś {amount}. Nowy balans: {newData.Credits}"
+            );
         }
 
-        // ===========================
-        // /dzienne
-        // ===========================
-        [SlashCommand("dzienne", "Odbierz dzienną nagrodę.")]
+        // -----------------------------
+        //           LEADERBOARD
+        // -----------------------------
+
+        [SlashCommand("leaderboard", "Top 10 najbogatszych.")]
+        public async Task Leaderboard()
+        {
+            await DeferAsync();
+
+            var list = await UserDataManager.GetTopUsersLeaderboardAsync(10);
+            if (list.Count == 0)
+            {
+                await FollowupAsync("Brak danych.");
+                return;
+            }
+
+            string lines = string.Join("\n",
+                list.Select((x, i) => $"**#{i + 1}** <@{x.UserId}> — {x.Credits} kredytów"));
+
+            await FollowupAsync(lines);
+        }
+
+        // -----------------------------
+        //           DAILY
+        // -----------------------------
+
+        [SlashCommand("dzienne", "Odbierz nagrodę dzienną.")]
         public async Task Daily()
         {
             await DeferAsync();
 
-            ulong id = Context.User.Id;
+            ulong uid = Context.User.Id;
 
-            if (!await UserDataManager.CanClaimDailyAsync(id))
+            if (!await UserDataManager.CanClaimDailyAsync(uid))
             {
-                var rem = await UserDataManager.GetDailyCooldownRemainingAsync(id);
-                await FollowupAsync($"⏳ Dostępne za {rem.Hours}h {rem.Minutes}m", ephemeral: true);
+                var remain = await UserDataManager.GetDailyCooldownRemainingAsync(uid);
+                await FollowupAsync($"Odbierzesz za {remain.Hours}h {remain.Minutes}m");
                 return;
             }
 
             int reward = new Random().Next(100, 251);
-            await UserDataManager.AddCreditsAsync(id, reward);
-            await UserDataManager.SetDailyClaimAsync(id);
 
-            int bal = (await UserDataManager.GetUserAsync(id)).Credits;
+            await UserDataManager.AddCreditsAsync(uid, reward);
+            await UserDataManager.SetDailyClaimAsync(uid);
 
-            await FollowupAsync($"🎁 Otrzymałeś **{reward}**!\nNowy balans: **{bal}**");
+            var data = await UserDataManager.GetUserAsync(uid);
+
+            await FollowupAsync($"🎁 Otrzymujesz {reward}! Nowy balans: {data.Credits}");
         }
 
-        // ===========================
-        // /leaderboard
-        // ===========================
-        [SlashCommand("leaderboard", "Top 10 graczy")]
-        public async Task Leaderboard()
-        {
-            await DeferAsync();
-            var list = await UserDataManager.GetTopUsersLeaderboardAsync(10);
+        // -----------------------------
+        //       GRANT CREDITS ADMIN
+        // -----------------------------
 
-            if (!list.Any())
-            {
-                await FollowupAsync("📉 Brak danych.");
-                return;
-            }
-
-            string desc = string.Join("\n",
-                list.Select((u, i) => $"**#{i + 1}** <@{u.UserId}> — **{u.Credits}** kredytów"));
-
-            var embed = new EmbedBuilder()
-                .WithTitle("🏆 Najbogatsi gracze")
-                .WithDescription(desc)
-                .WithColor(Color.Gold)
-                .Build();
-
-            await FollowupAsync(embed: embed);
-        }
-
-        // ===========================
-        // /grantcredits
-        // ===========================
-        [SlashCommand("grantcredits", "Admin: daj kredyty użytkownikowi")]
+        [SlashCommand("grantcredits", "ADMIN: dodaj kredyty.")]
         [DefaultMemberPermissions(GuildPermission.Administrator)]
         public async Task GrantCredits(IUser target, int amount)
         {
             if (amount <= 0)
             {
-                await RespondAsync("⚠️ Ilość > 0!", ephemeral: true);
+                await RespondAsync("Kwota > 0!", ephemeral: true);
                 return;
             }
 
             await UserDataManager.AddCreditsAsync(target.Id, amount);
-            int bal = (await UserDataManager.GetUserAsync(target.Id)).Credits;
+            var newData = await UserDataManager.GetUserAsync(target.Id);
 
-            await RespondAsync(
-                $"✅ Dodano **{amount}** kredytów dla {target.Mention}.\nNowy balans: **{bal}**",
-                ephemeral: true);
+            await RespondAsync($"Dodano {amount}. Nowy balans: {newData.Credits}");
         }
     }
 }
