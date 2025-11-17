@@ -62,11 +62,10 @@ public static class Bot
         
         await Client.LoginAsync(TokenType.Bot, Token);
         await Client.StartAsync();
-        await Task.Delay(Timeout.Infinite);
 
     Console.WriteLine("✅ Bot + HTTP API running. Press Ctrl+C to exit.");
-    await Task.Delay(Timeout.Infinite);
     
+        await Task.Delay(-1);
     }
 
     private static async Task MessageReceivedHandler(SocketMessage message)
@@ -262,6 +261,7 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
 
 
 
