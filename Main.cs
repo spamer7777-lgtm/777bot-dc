@@ -181,6 +181,7 @@ public static class Bot
         await Service.RegisterCommandsGloballyAsync();
 
         Client.InteractionCreated += InteractionCreated;
+        Client.ButtonExecuted += Commands.NoGroup.HandleRouletteButtonsStatic;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
        Console.WriteLine($"✅ Bot is ready! Loaded {Service.Modules.Count} command modules.");
@@ -259,4 +260,5 @@ timer = new Timer(async _ =>
         return Task.CompletedTask;
     }
 }
+
 
