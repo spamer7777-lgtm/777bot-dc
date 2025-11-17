@@ -3,12 +3,11 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using System;
 using System.Reflection;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using Performance;
 using System.Collections.Generic;
 
 public static class Bot
@@ -22,10 +21,9 @@ public static class Bot
     });
 
     private static InteractionService Service;
-    private static readonly string Token = "MTQzNTM0NTIyNTU1MDkyMTczOQ.GPq8Jr.CwNZV7YZ5b7KYHynYz3NKOcksKgzrzMs0R6Eto";
     private static Timer timer;
 
-    // 🟢 Nowy globalny HttpClient z poprawnymi nagłówkami
+    // Global HttpClient
     public static readonly HttpClient Http = new HttpClient(new HttpClientHandler
     {
         AllowAutoRedirect = true,
@@ -35,36 +33,38 @@ public static class Bot
         Timeout = TimeSpan.FromSeconds(10)
     };
 
-    // 🟢 Statyczny konstruktor — dodaje nagłówki
     static Bot()
     {
-        Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) DiscordBot/1.0");
+        Http.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 DiscordBot/1.0");
         Http.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
     }
 
-    // ------------------ MESSAGE CREDIT DROPS ------------------
+    // Message credit cooldowns
     private static readonly Dictionary<ulong, DateTime> messageCreditCooldowns = new();
-    private static readonly int creditCooldownSeconds = 60; // 1 minute cooldown
+    private static readonly int creditCooldownSeconds = 60;
     private static readonly int creditAmountMin = 1;
     private static readonly int creditAmountMax = 5;
 
     public static async Task Main()
     {
-        if (Token is null)
-            throw new ArgumentException("Discord bot token not set properly.");
+        // Load token from ENV
+        var token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");
+        if (string.IsNullOrEmpty(token))
+            throw new ArgumentException("DISCORD_TOKEN is not set in environment variables!");
+
+        // Start HTTP API in the background
+        var cts = new CancellationTokenSource();
+        _ = Task.Run(() => HttpApi.StartAsync(cts.Token));
 
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
 
-        var cts = new CancellationTokenSource();
-        _ = Task.Run(() => HttpApi.StartAsync(cts.Token));
-        
-        await Client.LoginAsync(TokenType.Bot, Token);
+        await Client.LoginAsync(TokenType.Bot, token);
         await Client.StartAsync();
 
-    Console.WriteLine("✅ Bot + HTTP API running. Press Ctrl+C to exit.");
-    
+        Console.WriteLine("✅ Bot + HTTP API running. Press Ctrl+C to exit.");
+
         await Task.Delay(-1);
     }
 
@@ -83,11 +83,10 @@ public static class Bot
 
         int triggerCount = new[] { containsXddd, containsTubas, containsRozkminka }.Count(b => b);
 
-        // ------------------ MESSAGE CREDIT DROP ------------------
+        // Message credits
         if (triggerCount == 0)
             await HandleMessageCredits(user);
 
-        // ------------------ SPECIAL TRIGGERS ------------------
         if (triggerCount != 1) return;
 
         if (containsXddd)
@@ -100,19 +99,16 @@ public static class Bot
 
     private static async Task HandleMessageCredits(SocketGuildUser user)
     {
-        // Check cooldown
         if (messageCreditCooldowns.TryGetValue(user.Id, out DateTime lastClaim))
         {
             if ((DateTime.UtcNow - lastClaim).TotalSeconds < creditCooldownSeconds)
-                return; // still in cooldown
+                return;
         }
 
-        // Give random credits
         var rand = new Random();
         int reward = rand.Next(creditAmountMin, creditAmountMax + 1);
 
         await UserDataManager.AddCreditsAsync(user.Id, reward);
-
         messageCreditCooldowns[user.Id] = DateTime.UtcNow;
 
         var newBalance = (await UserDataManager.GetUserAsync(user.Id)).Credits;
@@ -182,10 +178,8 @@ public static class Bot
         });
 
         await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
-        //ulong guildId = 1222629512056148008; // <-- replace with your Discord server ID
-        //await Service.RegisterCommandsToGuildAsync(guildId);
-        //await Client.Rest.DeleteAllGlobalCommandsAsync();
         await Service.RegisterCommandsGloballyAsync();
+
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
@@ -202,7 +196,7 @@ public static class Bot
             try
             {
                 if (showGame)
-                    await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+                    await Client.SetGameAsync("777 Slots", ActivityType.Playing);
                 else
                     await Client.SetCustomStatusAsync(statuses[index]);
 
@@ -225,23 +219,25 @@ public static class Bot
         }
         catch
         {
-            if (interaction.Type == InteractionType.ApplicationCommand)
-                await interaction.GetOriginalResponseAsync()
-                    .ContinueWith(async msg => await msg.Result.DeleteAsync());
+            try
+            {
+                if (interaction.Type == InteractionType.ApplicationCommand)
+                {
+                    var msg = await interaction.GetOriginalResponseAsync();
+                    await msg.DeleteAsync();
+                }
+            }
+            catch { }
         }
     }
 
-    private static async Task SlashCommandResulted(SlashCommandInfo info, IInteractionContext ctx, IResult res)
+    private static async Task SlashCommandResulted(
+        SlashCommandInfo info, IInteractionContext ctx, IResult res)
     {
         if (!res.IsSuccess)
             await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
         else
-        {
-            // Commented out Stats for now since it may not exist
-            // var cpuUsage = await Stats.GetCpuUsageForProcess();
-            // var ramUsage = Stats.GetRamUsageForProcess();
-            Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} | Command: {info.Name}");
-        }
+            Console.WriteLine($"{DateTime.Now:dd/MM H:mm:ss} | Command: {info.Name}");
     }
 
     private static Task Log(LogMessage logMessage)
@@ -256,21 +252,10 @@ public static class Bot
             LogSeverity.Warning => ConsoleColor.Magenta,
             _ => ConsoleColor.White,
         };
-        Console.WriteLine($"{DateTime.Now:dd/MM. H:mm:ss} [{logMessage.Source}] {logMessage.Message}");
+
+        Console.WriteLine($"{DateTime.Now:dd/MM H:mm:ss} [{logMessage.Source}] {logMessage.Message}");
         Console.ResetColor();
+
         return Task.CompletedTask;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
