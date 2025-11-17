@@ -183,31 +183,31 @@ public static class Bot
         Client.InteractionCreated += InteractionCreated;
         Service.SlashCommandExecuted += SlashCommandResulted;
 
-        Console.WriteLine($"✅ Bot is ready! Loaded {Service.Modules.Count} command modules.");
-        await Client.SetGameAsync("777 Slots", type: ActivityType.Playing);
+       Console.WriteLine($"✅ Bot is ready! Loaded {Service.Modules.Count} command modules.");
+await Client.SetGameAsync("777 Slots");
 
-        string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
-        int index = 0;
-        bool showGame = false;
+string[] statuses = { "No Siemano!", "Ale kto pytał?", "Ale sigiemki tutaj" };
+int index = 0;
+bool showGame = false;
 
-        timer = new Timer(async _ =>
-        {
-            if (Client.ConnectionState != ConnectionState.Connected) return;
-            try
-            {
-                if (showGame)
-                    await Client.SetGameAsync("777 Slots", ActivityType.Playing);
-                else
-                    await Client.SetCustomStatusAsync(statuses[index]);
+timer = new Timer(async _ =>
+{
+    if (Client.ConnectionState != ConnectionState.Connected) return;
+    try
+    {
+        if (showGame)
+            await Client.SetGameAsync("777 Slots");
+        else
+            await Client.SetCustomStatusAsync(statuses[index]);
 
-                index = (index + 1) % statuses.Length;
-                showGame = !showGame;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[STATUS ERROR] {ex.Message}");
-            }
-        }, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
+        index = (index + 1) % statuses.Length;
+        showGame = !showGame;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[STATUS ERROR] {ex.Message}");
+    }
+}, null, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
     }
 
     private static async Task InteractionCreated(SocketInteraction interaction)
@@ -259,3 +259,4 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
