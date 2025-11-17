@@ -183,18 +183,19 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
 {
     string col = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
 
-    // FIXED async lambda
-    await msg.ModifyAsync(async m =>
+    var embedStep = new EmbedBuilder()
+        .WithDescription($"🎲 {col} {n}")
+        .WithColor(Color.DarkGrey)
+        .Build();
+
+    // no async lambda — safe
+    await msg.ModifyAsync(m =>
     {
-        m.Embed = new EmbedBuilder()
-            .WithDescription($"🎲 {col} {n}")
-            .WithColor(Color.DarkGrey)
-            .Build();
+        m.Embed = embedStep;
     });
 
     await Task.Delay(120);
 }
-
 
             bool win = choice == finalColor;
             int reward = finalColor == "green" ? stawka * 14 : win ? stawka * 2 : 0;
@@ -341,4 +342,5 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
         }
     }
 }
+
 
