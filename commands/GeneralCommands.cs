@@ -179,14 +179,22 @@ namespace Commands
                 new EmbedBuilder().WithDescription("🎡 Kula się kręci...").Build()
             ) as IUserMessage;
 
-            foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNum))
-            {
-                string col = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
-                await msg.ModifyAsync(m => m.Embed = 
-                    new EmbedBuilder().WithDescription($"🎲 {col} {n}").Build()
-                );
-                await Task.Delay(120);
-            }
+foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNum))
+{
+    string col = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
+
+    // FIXED async lambda
+    await msg.ModifyAsync(async m =>
+    {
+        m.Embed = new EmbedBuilder()
+            .WithDescription($"🎲 {col} {n}")
+            .WithColor(Color.DarkGrey)
+            .Build();
+    });
+
+    await Task.Delay(120);
+}
+
 
             bool win = choice == finalColor;
             int reward = finalColor == "green" ? stawka * 14 : win ? stawka * 2 : 0;
@@ -333,3 +341,4 @@ namespace Commands
         }
     }
 }
+
