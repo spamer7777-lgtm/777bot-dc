@@ -24,13 +24,13 @@ namespace Commands
         [SlashCommand("ping", "Sprawdź opóźnienie.")]
         public async Task Ping()
         {
-            var embed = new EmbedBuilder()
-                .WithTitle("🏓 Pong!")
-                .WithDescription($"Latency: **{Bot.Client.Latency} ms**")
-                .WithColor(Color.Green)
-                .Build();
-
-            await RespondAsync(embed: embed);
+            await RespondAsync(embed:
+                new EmbedBuilder()
+                    .WithTitle("🏓 Pong!")
+                    .WithDescription($"Opóźnienie: **{Bot.Client.Latency} ms**")
+                    .WithColor(Color.Green)
+                    .Build()
+            );
         }
 
         // =========================================================
@@ -42,7 +42,7 @@ namespace Commands
             await RespondAsync(embed:
                 new EmbedBuilder()
                     .WithTitle("👋 Siemano!")
-                    .WithDescription($"{user.Mention} — witam!")
+                    .WithDescription($"{user.Mention}, witam Cię serdecznie!")
                     .WithColor(Color.Gold)
                     .Build()
             );
@@ -51,7 +51,7 @@ namespace Commands
         // =========================================================
         // BALANCE
         // =========================================================
-        [SlashCommand("balance", "Sprawdź balans.")]
+        [SlashCommand("balance", "Sprawdź swój balans.")]
         public async Task Balance()
         {
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
@@ -72,13 +72,15 @@ namespace Commands
         public async Task Slots(int amount = 10)
         {
             if (amount <= 0)
-            { await RespondAsync(embed: Error("Kwota musi być > 0"), ephemeral: true); return; }
+            { await RespondAsync(embed: Error("Kwota musi być większa niż 0."), ephemeral: true); return; }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
+
             if (data.Credits < amount)
-            { await RespondAsync(embed: Error("Za mało kredytów!"), ephemeral: true); return; }
+            { await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true); return; }
 
             await DeferAsync();
+
             await UserDataManager.RemoveCreditsAsync(Context.User.Id, amount);
 
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
@@ -86,15 +88,16 @@ namespace Commands
 
             var msg = await FollowupAsync(embed: Loading("🎰 Kręcimy...")) as IUserMessage;
 
+            // animation
             for (int i = 0; i < 5; i++)
             {
                 string roll = string.Join(" ", Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]));
-                await msg.ModifyAsync(m => m.Embed = Loading($"🎰 {roll}"));
+                await msg.ModifyAsync(m => m.Embed = Loading($"🎰 {roll}\nKręcimy..."));
                 await Task.Delay(200);
             }
 
+            // final roll
             string[] final = Enumerable.Range(0, 3).Select(_ => icons[rand.Next(icons.Length)]).ToArray();
-
             bool win = final.All(x => x == final[0]);
             int reward = win ? amount * 5 : 0;
 
@@ -103,8 +106,10 @@ namespace Commands
 
             var embed = new EmbedBuilder()
                 .WithTitle("🎰 Wynik Slots")
-                .WithDescription($"{final[0]} {final[1]} {final[2]}\n\n" +
-                                 (win ? $"🎉 Wygrana **{reward}**" : $"💀 Przegrana **{amount}**"))
+                .WithDescription($"**{final[0]} {final[1]} {final[2]}**\n\n" +
+                                 (win
+                                 ? $"🎉 WYGRAŁEŚ **{reward}** kredytów!"
+                                 : $"💀 Przegrałeś **{amount}** kredytów."))
                 .WithColor(win ? Color.Gold : Color.DarkRed)
                 .WithFooter($"Balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits}")
                 .Build();
@@ -113,13 +118,13 @@ namespace Commands
         }
 
         // =========================================================
-        // RULETKA
+        // RULETKA — COMMAND
         // =========================================================
-        [SlashCommand("ruletka", "Postaw zakład.")]
+        [SlashCommand("ruletka", "Postaw zakład na kolor.")]
         public async Task Ruletka(int stawka)
         {
             if (stawka <= 0)
-            { await RespondAsync(embed: Error("Kwota > 0"), ephemeral: true); return; }
+            { await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true); return; }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
             if (data.Credits < stawka)
@@ -128,14 +133,14 @@ namespace Commands
             RouletteStakes[Context.User.Id] = stawka;
 
             var buttons = new ComponentBuilder()
-                .WithButton("🔴 Czerwony", "roulette_red")
-                .WithButton("⚫ Czarny", "roulette_black")
-                .WithButton("🟩 Zielony (0)", "roulette_green");
+                .WithButton("🔴 Czerwony", "roulette_red", ButtonStyle.Danger)
+                .WithButton("⚫ Czarny", "roulette_black", ButtonStyle.Secondary)
+                .WithButton("🟩 Zielony (0)", "roulette_green", ButtonStyle.Success);
 
             await RespondAsync(
                 embed: new EmbedBuilder()
                     .WithTitle("🎡 Ruletka")
-                    .WithDescription($"Stawiasz **{stawka}** kredytów.\nWybierz kolor.")
+                    .WithDescription($"Stawiasz **{stawka}** kredytów.\nWybierz kolor poniżej.")
                     .WithColor(Color.Blue)
                     .Build(),
                 components: buttons.Build()
@@ -143,19 +148,20 @@ namespace Commands
         }
 
         // =========================================================
-        // STATIC BUTTON HANDLER (FIXED)
+        // RULETKA — STATIC BUTTON HANDLER (FIXED)
         // =========================================================
         public static async Task HandleRouletteButtonsStatic(SocketMessageComponent component)
         {
             if (!component.Data.CustomId.StartsWith("roulette_"))
                 return;
 
-            // Ensure initial response exists
+            // ensure interaction is acknowledged
             if (!component.HasResponded)
-                await component.RespondAsync("⏳...", ephemeral: true);
+                await component.DeferAsync();
 
             ulong uid = component.User.Id;
 
+            // no active stake?
             if (!RouletteStakes.TryGetValue(uid, out int stawka))
             {
                 await component.FollowupAsync(embed:
@@ -175,31 +181,35 @@ namespace Commands
             string finalColor = finalNum == 0 ? "green" :
                                 finalNum % 2 == 0 ? "black" : "red";
 
-            var msg = await component.FollowupAsync(embed: 
-                new EmbedBuilder().WithDescription("🎡 Kula się kręci...").Build()
+            // send spinning message
+            var msg = await component.FollowupAsync(embed:
+                new EmbedBuilder()
+                    .WithDescription("🎡 Kula się kręci...")
+                    .WithColor(Color.DarkGrey)
+                    .Build()
             ) as IUserMessage;
 
-foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNum))
-{
-    string col = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
+            // spinning animation
+            foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(finalNum))
+            {
+                string col = n == 0 ? "🟩" : (n % 2 == 0 ? "⚫" : "🔴");
 
-    var embedStep = new EmbedBuilder()
-        .WithDescription($"🎲 {col} {n}")
-        .WithColor(Color.DarkGrey)
-        .Build();
+                var embedStep = new EmbedBuilder()
+                    .WithDescription($"🎲 {col} {n}")
+                    .WithColor(Color.DarkGrey)
+                    .Build();
 
-    // no async lambda — safe
-    await msg.ModifyAsync(m =>
-    {
-        m.Embed = embedStep;
-    });
+                await msg.ModifyAsync(m => { m.Embed = embedStep; });
+                await Task.Delay(120);
+            }
 
-    await Task.Delay(120);
-}
-
+            // determine reward
             bool win = choice == finalColor;
-            int reward = finalColor == "green" ? stawka * 14 : win ? stawka * 2 : 0;
+            int reward =
+                finalColor == "green" ? stawka * 14 :
+                win ? stawka * 2 : 0;
 
+            // apply win/loss
             if (win)
                 await UserDataManager.AddCreditsAsync(uid, reward);
             else
@@ -207,32 +217,38 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
 
             RouletteStakes.Remove(uid);
 
-            await msg.ModifyAsync(m => m.Embed =
-                new EmbedBuilder()
-                    .WithTitle("🎯 Wynik Ruletki")
-                    .WithDescription($"Wypadło **{finalNum}** ({finalColor}).\n\n" +
-                                     (win ? $"🎉 Wygrana **{reward}**!" : $"💀 Przegrana **{stawka}**."))
-                    .WithColor(win ? Color.Green : Color.Red)
-                    .WithFooter($"Balans: {(await UserDataManager.GetUserAsync(uid)).Credits}")
-                    .Build()
-            );
+            // get balance BEFORE ModifyAsync
+            var finalData = await UserDataManager.GetUserAsync(uid);
+
+            var finalEmbed = new EmbedBuilder()
+                .WithTitle("🎯 Wynik Ruletki")
+                .WithDescription(
+                    $"Wypadło **{finalNum}** ({finalColor}).\n\n" +
+                    (win ? $"🎉 WYGRAŁEŚ **{reward}** kredytów!" :
+                           $"💀 PRZEGRAŁEŚ **{stawka}** kredytów.")
+                )
+                .WithColor(win ? Color.Green : Color.Red)
+                .WithFooter($"Balans: {finalData.Credits}")
+                .Build();
+
+            await msg.ModifyAsync(m => { m.Embed = finalEmbed; });
         }
 
         // =========================================================
         // BET
         // =========================================================
-        [SlashCommand("bet", "50/50 podwój stawkę.")]
+        [SlashCommand("bet", "50/50 — podwój stawkę.")]
         public async Task Bet(int amount)
         {
             if (amount <= 0)
-            { await RespondAsync(embed: Error("Kwota > 0"), ephemeral: true); return; }
+            { await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true); return; }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
-            if (data.Credits < amount)
-            { await RespondAsync(embed: Error("Za mało kredytów!"), ephemeral: true); return; }
 
-            var rand = new Random();
-            bool win = rand.NextDouble() < 0.5;
+            if (data.Credits < amount)
+            { await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true); return; }
+
+            bool win = new Random().NextDouble() < 0.5;
 
             if (win)
                 await UserDataManager.AddCreditsAsync(Context.User.Id, amount);
@@ -299,6 +315,7 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
             }
 
             int reward = new Random().Next(100, 251);
+
             await UserDataManager.AddCreditsAsync(uid, reward);
             await UserDataManager.SetDailyClaimAsync(uid);
 
@@ -322,7 +339,7 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
         {
             if (amount <= 0)
             {
-                await RespondAsync(embed: Error("Kwota > 0"), ephemeral: true);
+                await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true);
                 return;
             }
 
@@ -342,5 +359,3 @@ foreach (int n in Enumerable.Range(0, 12).Select(_ => rand.Next(0, 37)).Append(f
         }
     }
 }
-
-
