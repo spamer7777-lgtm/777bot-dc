@@ -1,9 +1,13 @@
 using System;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 
 public static class HttpApi
 {
@@ -29,14 +33,8 @@ public static class HttpApi
         {
             HttpListenerContext ctx;
 
-            try
-            {
-                ctx = await listener.GetContextAsync();
-            }
-            catch
-            {
-                break;
-            }
+            try { ctx = await listener.GetContextAsync(); }
+            catch { break; }
 
             _ = HandleRequestAsync(ctx);
         }
@@ -51,14 +49,19 @@ public static class HttpApi
 
         try
         {
+            // HEALTH
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/health")
             {
                 await WriteJsonAsync(res, new { status = "ok" });
                 return;
             }
 
+            // API KEY CHECK (except Activity endpoints)
             var expectedKey = Environment.GetEnvironmentVariable("API_KEY");
-            if (!string.IsNullOrEmpty(expectedKey))
+            bool isActivityEndpoint =
+                req.Url.AbsolutePath.StartsWith("/activity");
+
+            if (!string.IsNullOrEmpty(expectedKey) && !isActivityEndpoint)
             {
                 var provided = req.Headers["X-Api-Key"];
                 if (provided != expectedKey)
@@ -69,62 +72,197 @@ public static class HttpApi
                 }
             }
 
-            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/check_balance")
-            {
-                var body = await JsonSerializer.DeserializeAsync<BalanceRequest>(req.InputStream);
-                var user = await UserDataManager.GetUserAsync(body.UserId);
+            //
+            // ===========================
+            //      ACTIVITY ENDPOINTS
+            // ===========================
+            //
 
-                await WriteJsonAsync(res, new { balance = user.Credits });
+            // AUTH
+            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/auth")
+            {
+                var body = await ReadBodyAsync(req);
+                var data = JsonSerializer.Deserialize<ActivityAuthRequest>(body, JsonOptions);
+
+                var result = await HandleActivityAuthAsync(data.code);
+                await WriteJsonAsync(res, result);
+                return;
+            }
+
+            // SPIN
+            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/spin")
+            {
+                var body = await ReadBodyAsync(req);
+                var data = JsonSerializer.Deserialize<ActivitySpinRequest>(body, JsonOptions);
+
+                var result = HandleActivitySpin(data.UserId, data.Bet);
+                await WriteJsonAsync(res, result);
+                return;
+            }
+
+            //
+            // ===========================
+            //     EXISTING ENDPOINTS
+            // ===========================
+            //
+
+            if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/balance")
+            {
+                string userId = req.QueryString["user"];
+                int balance = UserDataManager.GetBalance(userId);
+
+                await WriteJsonAsync(res, new { balance });
                 return;
             }
 
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/consume")
             {
-                var body = await JsonSerializer.DeserializeAsync<ConsumeRequest>(req.InputStream);
-                bool ok = await UserDataManager.RemoveCreditsAsync(body.UserId, body.Amount);
+                var body = await ReadBodyAsync(req);
+                var consume = JsonSerializer.Deserialize<ConsumeRequest>(body, JsonOptions);
 
-                await WriteJsonAsync(res, new { success = ok });
+                UserDataManager.AddBalance(consume.UserId, -consume.Amount);
+                await WriteJsonAsync(res, new { ok = true });
                 return;
             }
 
-            if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/add_balance")
-            {
-                var body = await JsonSerializer.DeserializeAsync<ConsumeRequest>(req.InputStream);
-                await UserDataManager.AddCreditsAsync(body.UserId, body.Amount);
-
-                await WriteJsonAsync(res, new { success = true });
-                return;
-            }
-
+            // NOT FOUND
             res.StatusCode = 404;
             await WriteJsonAsync(res, new { error = "not_found" });
         }
         catch (Exception ex)
         {
-            Console.WriteLine("[HTTP ERROR] " + ex.Message);
             res.StatusCode = 500;
-            await WriteJsonAsync(res, new { error = "server_error" });
+            await WriteJsonAsync(res, new { error = "server_error", detail = ex.Message });
         }
+    }
+
+    // =============================
+    //             HELPERS
+    // =============================
+
+    private static async Task<string> ReadBodyAsync(HttpListenerRequest req)
+    {
+        using var reader = new StreamReader(req.InputStream, req.ContentEncoding);
+        return await reader.ReadToEndAsync();
     }
 
     private static async Task WriteJsonAsync(HttpListenerResponse res, object obj)
     {
         res.ContentType = "application/json";
-        var json = JsonSerializer.Serialize(obj, JsonOptions);
-        var bytes = Encoding.UTF8.GetBytes(json);
-        res.ContentLength64 = bytes.Length;
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(obj, JsonOptions);
         await res.OutputStream.WriteAsync(bytes, 0, bytes.Length);
         res.Close();
     }
 
-    private class BalanceRequest
+    // =============================
+    //     DISCORD ACTIVITY AUTH
+    // =============================
+
+    private static async Task<object> HandleActivityAuthAsync(string code)
     {
-        public ulong UserId { get; set; }
+        using var client = new HttpClient();
+
+        var values = new Dictionary<string, string>
+        {
+            ["client_id"] = Environment.GetEnvironmentVariable("CLIENT_ID"),
+            ["client_secret"] = Environment.GetEnvironmentVariable("CLIENT_SECRET"),
+            ["grant_type"] = "authorization_code",
+            ["code"] = code,
+            ["redirect_uri"] = Environment.GetEnvironmentVariable("ACTIVITY_REDIRECT_URI")
+        };
+
+        var tokenResp = await client.PostAsync(
+            "https://discord.com/api/oauth2/token",
+            new FormUrlEncodedContent(values)
+        );
+
+        var tokenJson = await tokenResp.Content.ReadAsStringAsync();
+        var token = JsonSerializer.Deserialize<OAuthToken>(tokenJson, JsonOptions);
+
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token.access_token);
+
+        var userJson = await client.GetStringAsync("https://discord.com/api/users/@me");
+        var user = JsonSerializer.Deserialize<DiscordUser>(userJson, JsonOptions);
+
+        int balance = UserDataManager.GetBalance(user.id);
+
+        return new
+        {
+            userId = user.id,
+            balance
+        };
     }
 
-    private class ConsumeRequest
+    // =============================
+    //     SLOT MACHINE LOGIC
+    // =============================
+
+    private static object HandleActivitySpin(string userId, int bet)
     {
-        public ulong UserId { get; set; }
+        int balance = UserDataManager.GetBalance(userId);
+        if (balance < bet)
+        {
+            return new { error = "NOT_ENOUGH_BALANCE" };
+        }
+
+        UserDataManager.AddBalance(userId, -bet);
+
+        string[] icons = { "🍒", "🍋", "🍇", "⭐", "💎" };
+        var random = new Random();
+
+        string a = icons[random.Next(icons.Length)];
+        string b = icons[random.Next(icons.Length)];
+        string c = icons[random.Next(icons.Length)];
+
+        int multiplier =
+            (a == b && b == c) ? 5 :
+            (a == b || b == c || a == c) ? 2 : 0;
+
+        int win = bet * multiplier;
+
+        if (win > 0)
+            UserDataManager.AddBalance(userId, win);
+
+        int newBalance = UserDataManager.GetBalance(userId);
+
+        return new
+        {
+            slots = new[] { a, b, c },
+            win,
+            newBalance
+        };
+    }
+
+    // =============================
+    //     MODELS
+    // =============================
+
+    public class ActivityAuthRequest
+    {
+        public string code { get; set; }
+    }
+
+    public class ActivitySpinRequest
+    {
+        public string UserId { get; set; }
+        public int Bet { get; set; }
+    }
+
+    public class OAuthToken
+    {
+        public string access_token { get; set; }
+    }
+
+    public class DiscordUser
+    {
+        public string id { get; set; }
+        public string username { get; set; }
+    }
+
+    public class ConsumeRequest
+    {
+        public string UserId { get; set; }
         public int Amount { get; set; }
     }
 }
