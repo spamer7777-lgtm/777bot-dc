@@ -49,17 +49,24 @@ public static class HttpApi
 
         try
         {
-            // HEALTH
+            //
+            // ====================
+            // HEALTH CHECK
+            // ====================
+            //
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/health")
             {
                 await WriteJsonAsync(res, new { status = "ok" });
                 return;
             }
 
-            // API KEY CHECK (except Activity endpoints)
+            //
+            // ===================================
+            // API KEY CHECK (except Activity OAuth)
+            // ===================================
+            //
             var expectedKey = Environment.GetEnvironmentVariable("API_KEY");
-            bool isActivityEndpoint =
-                req.Url.AbsolutePath.StartsWith("/activity");
+            bool isActivityEndpoint = req.Url.AbsolutePath.StartsWith("/activity/");
 
             if (!string.IsNullOrEmpty(expectedKey) && !isActivityEndpoint)
             {
@@ -73,45 +80,55 @@ public static class HttpApi
             }
 
             //
-            // ===========================
-            //      ACTIVITY ENDPOINTS
-            // ===========================
+            // ===============================
+            // DISCORD ACTIVITY ENDPOINTS
+            // ===============================
             //
 
-            // AUTH
+            //
+            // AUTHENTICATE ACTIVITY USER
+            //
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/auth")
             {
                 var body = await ReadBodyAsync(req);
                 var data = JsonSerializer.Deserialize<ActivityAuthRequest>(body, JsonOptions);
 
-                var result = await HandleActivityAuthAsync(data.code);
-                await WriteJsonAsync(res, result);
+                var authResult = await HandleActivityAuthAsync(data.code);
+                await WriteJsonAsync(res, authResult);
                 return;
             }
 
-            // SPIN
+            //
+            // SLOT MACHINE SPIN
+            //
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/spin")
             {
                 var body = await ReadBodyAsync(req);
                 var data = JsonSerializer.Deserialize<ActivitySpinRequest>(body, JsonOptions);
 
-                var result = HandleActivitySpin(data.UserId, data.Bet);
-                await WriteJsonAsync(res, result);
+                var spinResult = await HandleActivitySpinAsync(data.UserId, data.Bet);
+                await WriteJsonAsync(res, spinResult);
                 return;
             }
 
             //
-            // ===========================
-            //     EXISTING ENDPOINTS
-            // ===========================
+            // ==================================
+            // EXISTING API (Balance & Consume)
+            // ==================================
             //
 
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/balance")
             {
-                string userId = req.QueryString["user"];
-                int balance = UserDataManager.GetBalance(userId);
+                if (!ulong.TryParse(req.QueryString["user"], out ulong uid))
+                {
+                    res.StatusCode = 400;
+                    await WriteJsonAsync(res, new { error = "invalid_user_id" });
+                    return;
+                }
 
-                await WriteJsonAsync(res, new { balance });
+                var user = await UserDataManager.GetUserAsync(uid);
+
+                await WriteJsonAsync(res, new { balance = user.Credits });
                 return;
             }
 
@@ -120,12 +137,16 @@ public static class HttpApi
                 var body = await ReadBodyAsync(req);
                 var consume = JsonSerializer.Deserialize<ConsumeRequest>(body, JsonOptions);
 
-                UserDataManager.AddBalance(consume.UserId, -consume.Amount);
+                ulong uid = ulong.Parse(consume.UserId);
+                await UserDataManager.RemoveCreditsAsync(uid, consume.Amount);
+
                 await WriteJsonAsync(res, new { ok = true });
                 return;
             }
 
+            //
             // NOT FOUND
+            //
             res.StatusCode = 404;
             await WriteJsonAsync(res, new { error = "not_found" });
         }
@@ -137,7 +158,7 @@ public static class HttpApi
     }
 
     // =============================
-    //             HELPERS
+    //            HELPERS
     // =============================
 
     private static async Task<string> ReadBodyAsync(HttpListenerRequest req)
@@ -155,14 +176,14 @@ public static class HttpApi
     }
 
     // =============================
-    //     DISCORD ACTIVITY AUTH
+    //   DISCORD ACTIVITY AUTH
     // =============================
 
     private static async Task<object> HandleActivityAuthAsync(string code)
     {
         using var client = new HttpClient();
 
-        var values = new Dictionary<string, string>
+        var form = new Dictionary<string, string>
         {
             ["client_id"] = Environment.GetEnvironmentVariable("CLIENT_ID"),
             ["client_secret"] = Environment.GetEnvironmentVariable("CLIENT_SECRET"),
@@ -173,11 +194,13 @@ public static class HttpApi
 
         var tokenResp = await client.PostAsync(
             "https://discord.com/api/oauth2/token",
-            new FormUrlEncodedContent(values)
+            new FormUrlEncodedContent(form)
         );
-
         var tokenJson = await tokenResp.Content.ReadAsStringAsync();
+
         var token = JsonSerializer.Deserialize<OAuthToken>(tokenJson, JsonOptions);
+        if (token == null || string.IsNullOrEmpty(token.access_token))
+            return new { error = "invalid_oauth" };
 
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token.access_token);
@@ -185,35 +208,44 @@ public static class HttpApi
         var userJson = await client.GetStringAsync("https://discord.com/api/users/@me");
         var user = JsonSerializer.Deserialize<DiscordUser>(userJson, JsonOptions);
 
-        int balance = UserDataManager.GetBalance(user.id);
+        if (user == null || string.IsNullOrEmpty(user.id))
+            return new { error = "invalid_user" };
+
+        // STRICT ulong.Parse (your chosen option A)
+        ulong uid = ulong.Parse(user.id);
+
+        var dbUser = await UserDataManager.GetUserAsync(uid);
 
         return new
         {
             userId = user.id,
-            balance
+            balance = dbUser.Credits
         };
     }
 
     // =============================
-    //     SLOT MACHINE LOGIC
+    //     SLOT MACHINE BACKEND
     // =============================
 
-    private static object HandleActivitySpin(string userId, int bet)
+    private static async Task<object> HandleActivitySpinAsync(string userId, int bet)
     {
-        int balance = UserDataManager.GetBalance(userId);
-        if (balance < bet)
-        {
+        ulong uid = ulong.Parse(userId);
+
+        var user = await UserDataManager.GetUserAsync(uid);
+
+        if (user.Credits < bet)
             return new { error = "NOT_ENOUGH_BALANCE" };
-        }
 
-        UserDataManager.AddBalance(userId, -bet);
+        // Deduct bet
+        await UserDataManager.RemoveCreditsAsync(uid, bet);
 
+        // Slot machine symbols
         string[] icons = { "🍒", "🍋", "🍇", "⭐", "💎" };
-        var random = new Random();
+        var rng = new Random();
 
-        string a = icons[random.Next(icons.Length)];
-        string b = icons[random.Next(icons.Length)];
-        string c = icons[random.Next(icons.Length)];
+        string a = icons[rng.Next(icons.Length)];
+        string b = icons[rng.Next(icons.Length)];
+        string c = icons[rng.Next(icons.Length)];
 
         int multiplier =
             (a == b && b == c) ? 5 :
@@ -222,20 +254,20 @@ public static class HttpApi
         int win = bet * multiplier;
 
         if (win > 0)
-            UserDataManager.AddBalance(userId, win);
+            await UserDataManager.AddCreditsAsync(uid, win);
 
-        int newBalance = UserDataManager.GetBalance(userId);
+        var updated = await UserDataManager.GetUserAsync(uid);
 
         return new
         {
             slots = new[] { a, b, c },
             win,
-            newBalance
+            newBalance = updated.Credits
         };
     }
 
     // =============================
-    //     MODELS
+    //          MODELS
     // =============================
 
     public class ActivityAuthRequest
