@@ -49,12 +49,22 @@ public static class HttpApi
 
         try
         {
+            //
+            // ====================
+            // HEALTH CHECK
+            // ====================
+            //
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/health")
             {
                 await WriteJsonAsync(res, new { status = "ok" });
                 return;
             }
 
+            //
+            // ===================================
+            // API KEY CHECK (except Activity OAuth)
+            // ===================================
+            //
             var expectedKey = Environment.GetEnvironmentVariable("API_KEY");
             bool isActivityEndpoint = req.Url.AbsolutePath.StartsWith("/activity/");
 
@@ -69,10 +79,15 @@ public static class HttpApi
                 }
             }
 
+            //
             // ===============================
             // DISCORD ACTIVITY ENDPOINTS
             // ===============================
+            //
 
+            //
+            // AUTHENTICATE ACTIVITY USER
+            //
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/auth")
             {
                 var body = await ReadBodyAsync(req);
@@ -83,19 +98,24 @@ public static class HttpApi
                 return;
             }
 
+            //
+            // SLOT MACHINE SPIN
+            //
             if (req.HttpMethod == "POST" && req.Url.AbsolutePath == "/activity/spin")
             {
                 var body = await ReadBodyAsync(req);
                 var data = JsonSerializer.Deserialize<ActivitySpinRequest>(body, JsonOptions);
 
-                var spinResult = await HandleActivitySpinAsync(data.userId, data.bet);
+                var spinResult = await HandleActivitySpinAsync(data.UserId, data.Bet);
                 await WriteJsonAsync(res, spinResult);
                 return;
             }
 
-            // ===============================
-            // EXISTING BOT API
-            // ===============================
+            //
+            // ==================================
+            // EXISTING API (Balance & Consume)
+            // ==================================
+            //
 
             if (req.HttpMethod == "GET" && req.Url.AbsolutePath == "/balance")
             {
@@ -107,6 +127,7 @@ public static class HttpApi
                 }
 
                 var user = await UserDataManager.GetUserAsync(uid);
+
                 await WriteJsonAsync(res, new { balance = user.Credits });
                 return;
             }
@@ -123,6 +144,9 @@ public static class HttpApi
                 return;
             }
 
+            //
+            // NOT FOUND
+            //
             res.StatusCode = 404;
             await WriteJsonAsync(res, new { error = "not_found" });
         }
@@ -134,7 +158,7 @@ public static class HttpApi
     }
 
     // =============================
-    // HELPERS
+    //            HELPERS
     // =============================
 
     private static async Task<string> ReadBodyAsync(HttpListenerRequest req)
@@ -152,13 +176,11 @@ public static class HttpApi
     }
 
     // =============================
-    // DISCORD ACTIVITY AUTH
+    //   DISCORD ACTIVITY AUTH
     // =============================
 
     private static async Task<object> HandleActivityAuthAsync(string code)
     {
-        Console.WriteLine("====== ACTIVITY AUTH ======");
-
         using var client = new HttpClient();
 
         var form = new Dictionary<string, string>
@@ -166,23 +188,19 @@ public static class HttpApi
             ["client_id"] = Environment.GetEnvironmentVariable("CLIENT_ID"),
             ["client_secret"] = Environment.GetEnvironmentVariable("CLIENT_SECRET"),
             ["grant_type"] = "authorization_code",
-            ["code"] = code
-            // IMPORTANT: NO redirect_uri FOR ACTIVITIES
+            ["code"] = code,
+            ["redirect_uri"] = Environment.GetEnvironmentVariable("ACTIVITY_REDIRECT_URI")
         };
 
         var tokenResp = await client.PostAsync(
             "https://discord.com/api/oauth2/token",
             new FormUrlEncodedContent(form)
         );
-
         var tokenJson = await tokenResp.Content.ReadAsStringAsync();
-        var token = JsonSerializer.Deserialize<OAuthToken>(tokenJson, JsonOptions);
 
+        var token = JsonSerializer.Deserialize<OAuthToken>(tokenJson, JsonOptions);
         if (token == null || string.IsNullOrEmpty(token.access_token))
-        {
-            Console.WriteLine("❌ OAuth token failed");
             return new { error = "invalid_oauth" };
-        }
 
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token.access_token);
@@ -190,13 +208,13 @@ public static class HttpApi
         var userJson = await client.GetStringAsync("https://discord.com/api/users/@me");
         var user = JsonSerializer.Deserialize<DiscordUser>(userJson, JsonOptions);
 
-        Console.WriteLine($"[AUTH] Discord UserID returned = {user.id}");
+        if (user == null || string.IsNullOrEmpty(user.id))
+            return new { error = "invalid_user" };
 
+        // STRICT ulong.Parse (your chosen option A)
         ulong uid = ulong.Parse(user.id);
 
         var dbUser = await UserDataManager.GetUserAsync(uid);
-
-        Console.WriteLine($"[AUTH] MongoDB credits = {dbUser.Credits}");
 
         return new
         {
@@ -206,27 +224,22 @@ public static class HttpApi
     }
 
     // =============================
-    // ACTIVITY SPIN LOGIC
+    //     SLOT MACHINE BACKEND
     // =============================
 
     private static async Task<object> HandleActivitySpinAsync(string userId, int bet)
     {
-        Console.WriteLine("====== ACTIVITY SPIN ======");
-        Console.WriteLine($"[SPIN] Incoming spin request: userId={userId}, bet={bet}");
-
         ulong uid = ulong.Parse(userId);
+
         var user = await UserDataManager.GetUserAsync(uid);
 
-        Console.WriteLine($"[SPIN] DB credits before spin = {user.Credits}");
-
         if (user.Credits < bet)
-        {
-            Console.WriteLine("[SPIN] ❌ Not enough credits!");
             return new { error = "NOT_ENOUGH_BALANCE" };
-        }
 
+        // Deduct bet
         await UserDataManager.RemoveCreditsAsync(uid, bet);
 
+        // Slot machine symbols
         string[] icons = { "🍒", "🍋", "🍇", "⭐", "💎" };
         var rng = new Random();
 
@@ -245,8 +258,6 @@ public static class HttpApi
 
         var updated = await UserDataManager.GetUserAsync(uid);
 
-        Console.WriteLine($"[SPIN] DB credits AFTER spin = {updated.Credits}");
-
         return new
         {
             slots = new[] { a, b, c },
@@ -256,7 +267,7 @@ public static class HttpApi
     }
 
     // =============================
-    // MODELS
+    //          MODELS
     // =============================
 
     public class ActivityAuthRequest
@@ -266,8 +277,8 @@ public static class HttpApi
 
     public class ActivitySpinRequest
     {
-        public string userId { get; set; }  // camelCase for JSON!!!
-        public int bet { get; set; }        // camelCase for JSON!!!
+        public string UserId { get; set; }
+        public int Bet { get; set; }
     }
 
     public class OAuthToken
