@@ -50,11 +50,7 @@ public static class Bot
         var token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");
         if (string.IsNullOrEmpty(token))
             throw new ArgumentException("DISCORD_TOKEN is not set!");
-
-        // Start HTTP API
-        var cts = new CancellationTokenSource();
-        _ = Task.Run(() => HttpApi.StartAsync(cts.Token));
-
+        
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
@@ -253,3 +249,4 @@ public static class Bot
         return Task.CompletedTask;
     }
 }
+
