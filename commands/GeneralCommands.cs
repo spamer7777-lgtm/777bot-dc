@@ -13,10 +13,20 @@ namespace Commands
         public static Dictionary<ulong, int> RouletteStakes = new();
 
         private Embed Error(string msg) =>
-            new EmbedBuilder().WithTitle("❌ Błąd").WithDescription(msg).WithColor(Color.Red).Build();
+            new EmbedBuilder()
+                .WithTitle("❌ Błąd")
+                .WithDescription(msg)
+                .WithColor(Color.DarkRed)
+                .WithCurrentTimestamp()
+                .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                .Build();
 
         private Embed Loading(string msg) =>
-            new EmbedBuilder().WithDescription(msg).WithColor(Color.DarkGrey).Build();
+            new EmbedBuilder()
+                .WithDescription(msg)
+                .WithColor(Color.DarkGrey)
+                .WithCurrentTimestamp()
+                .Build();
 
         // =========================================================
         // PING
@@ -27,8 +37,12 @@ namespace Commands
             await RespondAsync(embed:
                 new EmbedBuilder()
                     .WithTitle("🏓 Pong!")
-                    .WithDescription($"Opóźnienie: **{Bot.Client.Latency} ms**")
-                    .WithColor(Color.Green)
+                    .WithDescription("Bot odpowiada poprawnie.")
+                    .AddField("📡 Opóźnienie", $"**{Bot.Client.Latency} ms**", true)
+                    .WithColor(Color.Gold)
+                    .WithThumbnailUrl(Context.Client.CurrentUser.GetAvatarUrl())
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -42,8 +56,12 @@ namespace Commands
             await RespondAsync(embed:
                 new EmbedBuilder()
                     .WithTitle("👋 Siemano!")
-                    .WithDescription($"{user.Mention}, witam Cię serdecznie!")
+                    .WithDescription($"{user.Mention}, witam Cię serdecznie na serwerze!")
+                    .AddField("Inicjator", Context.User.Mention, true)
                     .WithColor(Color.Gold)
+                    .WithThumbnailUrl(user.GetAvatarUrl() ?? user.GetDefaultAvatarUrl())
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -59,8 +77,12 @@ namespace Commands
             await RespondAsync(embed:
                 new EmbedBuilder()
                     .WithTitle("💰 Twój balans")
-                    .WithDescription($"Masz **{data.Credits}** kredytów.")
+                    .WithDescription("Stan Twoich kredytów w kasynie:")
+                    .AddField("Aktualny balans", $"**{data.Credits}** 💳", false)
                     .WithColor(Color.Gold)
+                    .WithThumbnailUrl(Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -72,12 +94,18 @@ namespace Commands
         public async Task Slots(int amount = 10)
         {
             if (amount <= 0)
-            { await RespondAsync(embed: Error("Kwota musi być większa niż 0."), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Kwota musi być większa niż 0."), ephemeral: true);
+                return;
+            }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
 
             if (data.Credits < amount)
-            { await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true);
+                return;
+            }
 
             await DeferAsync();
 
@@ -86,7 +114,7 @@ namespace Commands
             string[] icons = { "🍒", "🍋", "🍉", "💎", "7️⃣" };
             var rand = new Random();
 
-            var msg = await FollowupAsync(embed: Loading("🎰 Kręcimy...")) as IUserMessage;
+            var msg = await FollowupAsync(embed: Loading("🎰 Kręcimy bębny...")) as IUserMessage;
 
             // animation
             for (int i = 0; i < 5; i++)
@@ -104,14 +132,21 @@ namespace Commands
             if (win)
                 await UserDataManager.AddCreditsAsync(Context.User.Id, reward);
 
+            var finalData = await UserDataManager.GetUserAsync(Context.User.Id);
+
             var embed = new EmbedBuilder()
-                .WithTitle("🎰 Wynik Slots")
-                .WithDescription($"**{final[0]} {final[1]} {final[2]}**\n\n" +
-                                 (win
-                                 ? $"🎉 WYGRAŁEŚ **{reward}** kredytów!"
-                                 : $"💀 Przegrałeś **{amount}** kredytów."))
+                .WithTitle("🎰 Wynik jednorękiego bandyty")
+                .WithDescription($"**{final[0]} {final[1]} {final[2]}**")
+                .AddField(win ? "🎉 Wygrana!" : "💀 Przegrana!",
+                          win
+                              ? $"Zgarnąłeś **{reward}** kredytów!"
+                              : $"Straciłeś **{amount}** kredytów.",
+                          false)
+                .AddField("Nowy balans", $"**{finalData.Credits}** 💳", true)
                 .WithColor(win ? Color.Gold : Color.DarkRed)
-                .WithFooter($"Balans: {(await UserDataManager.GetUserAsync(Context.User.Id)).Credits}")
+                .WithThumbnailUrl(Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
+                .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                .WithCurrentTimestamp()
                 .Build();
 
             await msg.ModifyAsync(m => m.Embed = embed);
@@ -124,11 +159,17 @@ namespace Commands
         public async Task Ruletka(int stawka)
         {
             if (stawka <= 0)
-            { await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true);
+                return;
+            }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
             if (data.Credits < stawka)
-            { await RespondAsync(embed: Error("Za mało kredytów!"), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Za mało kredytów!"), ephemeral: true);
+                return;
+            }
 
             RouletteStakes[Context.User.Id] = stawka;
 
@@ -140,8 +181,12 @@ namespace Commands
             await RespondAsync(
                 embed: new EmbedBuilder()
                     .WithTitle("🎡 Ruletka")
-                    .WithDescription($"Stawiasz **{stawka}** kredytów.\nWybierz kolor poniżej.")
+                    .WithDescription($"Stawiasz **{stawka}** kredytów.\n\nWybierz kolor poniżej i spróbuj szczęścia!")
+                    .AddField("Wypłaty", "🟩 **Zielony (0)** — x14\n🔴 **Czerwony** — x2\n⚫ **Czarny** — x2", false)
                     .WithColor(Color.Blue)
+                    .WithThumbnailUrl(Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build(),
                 components: buttons.Build()
             );
@@ -167,8 +212,10 @@ namespace Commands
                 await component.FollowupAsync(embed:
                     new EmbedBuilder()
                         .WithTitle("❌ Błąd")
-                        .WithDescription("Nie masz aktywnej ruletki.")
-                        .WithColor(Color.Red)
+                        .WithDescription("Nie masz aktywnej ruletki. Użyj ponownie komendy `/ruletka`.")
+                        .WithColor(Color.DarkRed)
+                        .WithFooter($"Gracz: {component.User.Username}", component.User.GetAvatarUrl())
+                        .WithCurrentTimestamp()
                         .Build(),
                     ephemeral: true);
                 return;
@@ -186,6 +233,8 @@ namespace Commands
                 new EmbedBuilder()
                     .WithDescription("🎡 Kula się kręci...")
                     .WithColor(Color.DarkGrey)
+                    .WithFooter($"Gracz: {component.User.Username}", component.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             ) as IUserMessage;
 
@@ -197,6 +246,8 @@ namespace Commands
                 var embedStep = new EmbedBuilder()
                     .WithDescription($"🎲 {col} {n}")
                     .WithColor(Color.DarkGrey)
+                    .WithFooter($"Gracz: {component.User.Username}", component.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build();
 
                 await msg.ModifyAsync(m => { m.Embed = embedStep; });
@@ -221,14 +272,16 @@ namespace Commands
             var finalData = await UserDataManager.GetUserAsync(uid);
 
             var finalEmbed = new EmbedBuilder()
-                .WithTitle("🎯 Wynik Ruletki")
+                .WithTitle("🎯 Wynik ruletki")
                 .WithDescription(
                     $"Wypadło **{finalNum}** ({finalColor}).\n\n" +
                     (win ? $"🎉 WYGRAŁEŚ **{reward}** kredytów!" :
                            $"💀 PRZEGRAŁEŚ **{stawka}** kredytów.")
                 )
+                .AddField("Nowy balans", $"**{finalData.Credits}** 💳", true)
                 .WithColor(win ? Color.Green : Color.Red)
-                .WithFooter($"Balans: {finalData.Credits}")
+                .WithFooter($"Gracz: {component.User.Username}", component.User.GetAvatarUrl())
+                .WithCurrentTimestamp()
                 .Build();
 
             await msg.ModifyAsync(m => { m.Embed = finalEmbed; });
@@ -241,12 +294,18 @@ namespace Commands
         public async Task Bet(int amount)
         {
             if (amount <= 0)
-            { await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Kwota musi być > 0."), ephemeral: true);
+                return;
+            }
 
             var data = await UserDataManager.GetUserAsync(Context.User.Id);
 
             if (data.Credits < amount)
-            { await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true); return; }
+            {
+                await RespondAsync(embed: Error("Masz za mało kredytów."), ephemeral: true);
+                return;
+            }
 
             bool win = new Random().NextDouble() < 0.5;
 
@@ -261,10 +320,12 @@ namespace Commands
                 new EmbedBuilder()
                     .WithTitle(win ? "🎉 Wygrana!" : "💀 Przegrana!")
                     .WithDescription(win
-                        ? $"Podwajasz **{amount}** kredytów!"
-                        : $"Straciłeś **{amount}** kredytów.")
+                        ? $"Udało Ci się podwoić **{amount}** kredytów!"
+                        : $"Straciłeś **{amount}** kredytów w zakładzie 50/50.")
+                    .AddField("Nowy balans", $"**{data.Credits}** 💳", true)
                     .WithColor(win ? Color.Gold : Color.DarkRed)
-                    .WithFooter($"Balans: {data.Credits}")
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -285,14 +346,22 @@ namespace Commands
                 return;
             }
 
+            string Medal(int i) =>
+                i == 0 ? "🥇" :
+                i == 1 ? "🥈" :
+                i == 2 ? "🥉" : "🎰";
+
             string text = string.Join("\n",
-                list.Select((x, i) => $"**#{i + 1}** <@{x.UserId}> — **{x.Credits}**"));
+                list.Select((x, i) =>
+                    $"{Medal(i)} **#{i + 1}** — <@{x.UserId}>  \n  💰 **{x.Credits}** kredytów"));
 
             await FollowupAsync(embed:
                 new EmbedBuilder()
-                    .WithTitle("🏆 TOP 10")
+                    .WithTitle("🏆 TOP 10 GRACZY")
                     .WithDescription(text)
                     .WithColor(Color.Gold)
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -324,8 +393,13 @@ namespace Commands
             await FollowupAsync(embed:
                 new EmbedBuilder()
                     .WithTitle("🎁 Nagroda dzienna")
-                    .WithDescription($"Otrzymujesz **{reward}** kredytów!\nBalans: **{data.Credits}**")
+                    .WithDescription("Dziękujemy za codzienną aktywność!")
+                    .AddField("Dzisiejsza nagroda", $"✨ **{reward}** kredytów", true)
+                    .AddField("Nowy balans", $"💳 **{data.Credits}**", true)
                     .WithColor(Color.Green)
+                    .WithThumbnailUrl(Context.User.GetAvatarUrl() ?? Context.User.GetDefaultAvatarUrl())
+                    .WithFooter($"Wywołano przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build()
             );
         }
@@ -349,10 +423,12 @@ namespace Commands
 
             await RespondAsync(embed:
                 new EmbedBuilder()
-                    .WithTitle("🛠 ADMIN")
-                    .WithDescription($"Dodano **{amount}** kredytów użytkownikowi {target.Mention}.")
+                    .WithTitle("🛠 ADMIN — przyznano kredyty")
+                    .WithDescription($"Przyznano **{amount}** kredytów użytkownikowi {target.Mention}.")
+                    .AddField("Nowy balans użytkownika", $"**{data.Credits}** 💳", true)
                     .WithColor(Color.Blue)
-                    .WithFooter($"Nowy balans: {data.Credits}")
+                    .WithFooter($"Akcja wykonana przez {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithCurrentTimestamp()
                     .Build(),
                 ephemeral: true
             );
