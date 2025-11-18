@@ -51,24 +51,27 @@ public static class Bot
         if (string.IsNullOrEmpty(token))
             throw new ArgumentException("DISCORD_TOKEN is not set!");
 
+        // Start HTTP API
+        var cts = new CancellationTokenSource();
+        _ = Task.Run(() => HttpApi.StartAsync(cts.Token));
+
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
 
-        // Safe button wrapper
+        // --- FIXED: Button handler registered here (SAFE) ---
         Client.ButtonExecuted += HandleButtonSafeWrapper;
 
         await Client.LoginAsync(TokenType.Bot, token);
         await Client.StartAsync();
 
         Console.WriteLine("✅ Bot + HTTP API running.");
-
         await Task.Delay(-1);
     }
 
-    // ====================================================
-    // BUTTON WRAPPER — safe execution
-    // ====================================================
+    // ===============================================
+    // BUTTON WRAPPER — prevents crashes
+    // ===============================================
     private static async Task HandleButtonSafeWrapper(SocketMessageComponent component)
     {
         try
@@ -93,9 +96,9 @@ public static class Bot
         }
     }
 
-    // ====================================================
+    // ===============================================
     // MESSAGE CREDITS
-    // ====================================================
+    // ===============================================
     private static async Task MessageReceivedHandler(SocketMessage message)
     {
         if (message.Author.Id == Client.CurrentUser.Id) return;
@@ -141,10 +144,9 @@ public static class Bot
         Console.WriteLine($"[CREDIT DROP] +{reward} → {user.Username}");
     }
 
-    // ====================================================
-    // REACTION TRIGGERS
-    // ====================================================
-
+    // ===============================================
+    // REACTION TRIGGERS (unchanged)
+    // ===============================================
     private static async Task HandleXdddDetection(SocketMessage message, SocketGuildUser user)
     {
         Console.WriteLine($"[XDDD] {user.Username}");
@@ -178,9 +180,9 @@ public static class Bot
         }
     }
 
-    // ====================================================
-    // READY — FIXED WITH SAFE GLOBAL COMMAND SYNC
-    // ====================================================
+    // ===============================================
+    // READY — FIXED (NO CRASH)
+    // ===============================================
     private static async Task Ready()
     {
         try
@@ -192,14 +194,12 @@ public static class Bot
             });
 
             await Service.AddModulesAsync(Assembly.GetEntryAssembly(), null);
-
-            // DO NOT USE BULK OVERWRITE
-            await RegisterGlobalCommandsSafe();
+            await Service.RegisterCommandsGloballyAsync();
 
             Client.InteractionCreated += InteractionCreated;
             Service.SlashCommandExecuted += SlashCommandResulted;
 
-            Console.WriteLine($"✅ Ready! Loaded {Service.Modules.Count} slash command modules.");
+            Console.WriteLine($"✅ Ready! Loaded {Service.Modules.Count} command modules.");
 
             await Client.SetGameAsync("777 Slots");
 
@@ -225,55 +225,6 @@ public static class Bot
         }
     }
 
-    // ====================================================
-    // SAFE GLOBAL COMMAND REGISTRATION (NO BULK OVERWRITE)
-    // ====================================================
-    private static async Task RegisterGlobalCommandsSafe()
-    {
-        try
-        {
-            var appInfo = await Client.GetApplicationInfoAsync();
-
-            Console.WriteLine("🌍 Syncing global commands (safe mode, no bulk overwrite)…");
-
-            var modules = Service.Modules.SelectMany(m => m.SlashCommands);
-            var built = new List<ApplicationCommandProperties>();
-
-            foreach (var cmd in modules)
-            {
-                built.Add(cmd.BuildCommand(global: true));
-            }
-
-            var existing = await Client.Rest.GetGlobalApplicationCommands(appInfo.Id);
-            var existingDict = existing.ToDictionary(c => c.Name, StringComparer.OrdinalIgnoreCase);
-
-            foreach (var newCmd in built)
-            {
-                var name = newCmd.Name;
-
-                if (existingDict.TryGetValue(name, out var existingCmd))
-                {
-                    await Client.Rest.EditGlobalCommand(appInfo.Id, existingCmd.Id, newCmd);
-                    Console.WriteLine($"🔄 Updated global command /{name}");
-                }
-                else
-                {
-                    await Client.Rest.CreateGlobalCommand(appInfo.Id, newCmd);
-                    Console.WriteLine($"➕ Created global command /{name}");
-                }
-            }
-
-            Console.WriteLine("✔ Global commands synced.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[GLOBAL CMD ERROR] {ex}");
-        }
-    }
-
-    // ====================================================
-    // INTERACTION HANDLERS
-    // ====================================================
     private static async Task InteractionCreated(SocketInteraction interaction)
     {
         try
@@ -293,7 +244,7 @@ public static class Bot
         if (!res.IsSuccess)
             await ctx.Interaction.FollowupAsync($"❌ Error: {res.ErrorReason}", ephemeral: true);
         else
-            Console.WriteLine($"[CMD] Executed /{info.Name}");
+            Console.WriteLine($"[CMD] {info.Name}");
     }
 
     private static Task Log(LogMessage log)
