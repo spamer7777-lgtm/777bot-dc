@@ -40,6 +40,7 @@ moduł zmiany napędu,0
 zestaw:(t),50000
 zestaw:(w),100000
 zestaw:(d),150000
-Inne,Gwint. zawieszenie,32500
-Inne,Gwintowane zawieszenie,32500
+Gwint. zawieszenie,32500
+Gwintowane zawieszenie,32500
 Zmiana napędu,Moduł zmiany napędu,0
+
