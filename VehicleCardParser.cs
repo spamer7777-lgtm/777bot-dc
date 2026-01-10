@@ -86,13 +86,38 @@ namespace _777bot
             return true;
         }
 
-        private static List<string> SplitCommaList(string s)
+private static List<string> SplitCommaList(string s)
+{
+    var res = new List<string>();
+    if (string.IsNullOrWhiteSpace(s)) return res;
+
+    var sb = new System.Text.StringBuilder();
+    int depth = 0;
+
+    foreach (var ch in s)
+    {
+        if (ch == '(') depth++;
+        else if (ch == ')') depth = Math.Max(0, depth - 1);
+
+        if (ch == ',' && depth == 0)
         {
-            return s.Split(',')
-                .Select(x => TextNorm.Normalize(x))
-                .Where(x => !string.IsNullOrWhiteSpace(x))
-                .ToList();
+            var part = TextNorm.Normalize(sb.ToString());
+            if (!string.IsNullOrWhiteSpace(part))
+                res.Add(part);
+
+            sb.Clear();
+            continue;
         }
+
+        sb.Append(ch);
+    }
+
+    var last = TextNorm.Normalize(sb.ToString());
+    if (!string.IsNullOrWhiteSpace(last))
+        res.Add(last);
+
+    return res;
+}
 
         private static List<VisualItem> ParseVisualList(string s)
         {
