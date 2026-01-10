@@ -1,0 +1,429 @@
+ModelKeys,From,To,Price
+Admiral,Admiral Kombi,2.1,2.3,14000
+Admiral,Admiral Kombi,2.3,2.5,16000
+Admiral,Admiral Kombi,2.5,2.7,18000
+Admiral,Admiral Kombi,2.7,2.9,20000
+Alpha,2.2,2.4,14000
+Alpha,2.4,2.6,16000
+Alpha,2.6,2.8,18000
+Alpha,2.8,3.0,20000
+Banshee,Banshee Viper GTS,3.7,4.0,32000
+Banshee,Banshee Viper GTS,4.0,4.3,36000
+Banshee,Banshee Viper GTS,4.3,4.6,40000
+Banshee,Banshee Viper GTS,4.6,4.9,44000
+Benson,1.1,1.2,6000
+Benson,1.2,1.3,6000
+Benson,1.3,1.4,6000
+Benson,1.4,1.5,8000
+BF Injection,3.2,3.5,26000
+BF Injection,3.5,3.8,30000
+BF Injection,3.8,4.1,34000
+BF Injection,4.1,4.4,36000
+BF-400,0.4,0.45,6000
+BF-400,0.45,0.5,8000
+BF-400,0.5,0.55,8000
+BF-400,0.55,0.6,8000
+Blade,2.3,2.5,16000
+Blade,2.5,2.7,18000
+Blade,2.7,2.9,20000
+Blade,2.9,3.1,22000
+Blista Compact,2.6,2.8,18000
+Blista Compact,2.8,3.0,20000
+Blista Compact,3.0,3.2,22000
+Blista Compact,3.2,3.4,26000
+Bobcat,1.8,1.9,10000
+Bobcat,1.9,2.0,12000
+Bobcat,2.0,2.1,12000
+Bobcat,2.1,2.2,14000
+Boxville,1.1,1.2,6000
+Boxville,1.2,1.3,6000
+Boxville,1.3,1.4,6000
+Boxville,1.4,1.5,8000
+Bravura,1.2,1.3,6000
+Bravura,1.3,1.4,6000
+Bravura,1.4,1.5,8000
+Bravura,1.5,1.6,8000
+Broadway,1.8,1.9,10000
+Broadway,1.9,2.0,12000
+Broadway,2.0,2.1,12000
+Broadway,2.1,2.2,14000
+Buccanner,2.3,2.5,16000
+Buccanner,2.5,2.7,18000
+Buccanner,2.7,2.9,20000
+Buccanner,2.9,3.1,22000
+Buffalo,2.9,3.1,22000
+Buffalo,3.1,3.3,24000
+Buffalo,3.3,3.5,26000
+Buffalo,3.5,3.7,28000
+Bullet,Bullet GT,3.2,3.5,26000
+Bullet,Bullet GT,3.5,3.8,30000
+Bullet,Bullet GT,3.8,4.1,34000
+Bullet,Bullet GT,4.1,4.4,36000
+Burrito,2.5,2.7,18000
+Burrito,2.7,2.9,20000
+Burrito,2.9,3.1,22000
+Burrito,3.1,3.3,24000
+Cadrona,Cadrona DTM,1.8,1.9,10000
+Cadrona,Cadrona DTM,1.9,2.0,12000
+Cadrona,Cadrona DTM,2.0,2.1,12000
+Cadrona,Cadrona DTM,2.1,2.2,14000
+Camper,1.3,1.4,6000
+Camper,1.4,1.5,8000
+Camper,1.5,1.6,8000
+Camper,1.6,1.7,8000
+Celsion,2.4,2.8,18000
+Celsion,2.8,3.2,22000
+Celsion,3.2,3.6,28000
+Celsion,3.6,4.0,32000
+Cheetah,3.2,3.5,26000
+Cheetah,3.5,3.8,30000
+Cheetah,3.8,4.1,34000
+Cheetah,4.1,4.4,36000
+Cheetah 76',2.9,3.1,22000
+Cheetah 76',3.1,3.3,24000
+Cheetah 76',3.3,3.5,26000
+Cheetah 76',3.5,3.7,28000
+Clover,Clover Wagon,2.3,2.5,16000
+Clover,Clover Wagon,2.5,2.7,18000
+Clover,Clover Wagon,2.7,2.9,20000
+Clover,Clover Wagon,2.9,3.1,22000
+Club,3.2,3.5,26000
+Club,3.5,3.8,30000
+Club,3.8,4.1,34000
+Club,4.1,4.4,36000
+Comet,3.2,3.5,26000
+Comet,3.5,3.8,30000
+Comet,3.8,4.1,34000
+Comet,4.1,4.4,36000
+Contander,2.5,2.7,18000
+Contander,2.7,2.9,20000
+Contander,2.9,3.1,22000
+Contander,3.1,3.3,24000
+DeLuxo,2.8,3.0,20000
+DeLuxo,3.0,3.2,22000
+DeLuxo,3.2,3.4,26000
+DeLuxo,3.4,3.6,28000
+Elegant,1.8,1.9,10000
+Elegant,1.9,2.0,12000
+Elegant,2.0,2.1,12000
+Elegant,2.1,2.2,14000
+Elegy,2.9,3.1,22000
+Elegy,3.1,3.3,24000
+Elegy,3.3,3.5,26000
+Elegy,3.5,3.7,28000
+Emperor,1.9,2.0,12000
+Emperor,2.0,2.1,12000
+Emperor,2.1,2.2,14000
+Emperor,2.2,2.3,14000
+Esperanto,1.5,1.6,8000
+Esperanto,1.6,1.7,8000
+Esperanto,1.7,1.8,10000
+Esperanto,1.8,1.9,10000
+Euros,2.3,2.5,16000
+Euros,2.5,2.7,18000
+Euros,2.7,2.9,20000
+Euros,2.9,3.1,22000
+Faggio,0.05,0.07,4000
+Faggio,0.07,0.09,4000
+Faggio,0.09,0.11,4000
+Faggio,0.11,0.13,4000
+FCR-900,FCR-900 RR,0.8,0.85,10000
+FCR-900,FCR-900 RR,0.85,0.9,10000
+FCR-900,FCR-900 RR,0.9,0.95,10000
+FCR-900,FCR-900 RR,0.95,1.0,4000
+Feltzer,Feltzer GT,2.9,3.1,22000
+Feltzer,Feltzer GT,3.1,3.3,24000
+Feltzer,Feltzer GT,3.3,3.5,26000
+Feltzer,Feltzer GT,3.5,3.7,28000
+Feroci,3.0,3.3,24000
+Feroci,3.3,3.6,28000
+Feroci,3.5,3.9,30000
+Feroci,3.9,4.2,34000
+Flash,2.3,2.5,16000
+Flash,2.5,2.7,18000
+Flash,2.7,2.9,20000
+Flash,2.9,3.1,22000
+Fortune,Fortune 240SX,1.8,1.9,10000
+Fortune,Fortune 240SX,1.9,2.0,12000
+Fortune,Fortune 240SX,2.0,2.1,12000
+Fortune,Fortune 240SX,2.1,2.2,14000
+Freeway,1.0,1.1,4000
+Freeway,1.1,1.2,6000
+Freeway,1.2,1.3,6000
+Freeway,1.3,1.4,6000
+Glendale,2.1,2.3,14000
+Glendale,2.1,2.3,16000
+Glendale,2.5,2.7,18000
+Glendale,2.7,2.9,20000
+Greenwood,1.8,1.9,10000
+Greenwood,1.9,2.0,12000
+Greenwood,2.0,2.1,12000
+Greenwood,2.1,2.2,14000
+Hermes,1.5,1.6,8000
+Hermes,1.6,1.7,8000
+Hermes,1.7,1.8,10000
+Hermes,1.8,1.9,10000
+Hotknife,2.9,3.1,22000
+Hotknife,3.1,3.3,24000
+Hotknife,3.3,3.5,26000
+Hotknife,3.5,3.7,28000
+Huntley,2.5,2.7,18000
+Huntley,2.7,2.9,20000
+Huntley,2.9,3.1,22000
+Huntley,3.1,3.3,24000
+Hustler,2.1,2.3,14000
+Hustler,2.3,2.5,16000
+Hustler,2.5,2.7,18000
+Hustler,2.7,2.9,20000
+Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.2,3.5,26000
+Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.5,3.8,30000
+Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.8,4.1,34000
+Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,4.1,4.4,36000
+Intruder,1.5,1.6,8000
+Intruder,1.6,1.7,8000
+Intruder,1.7,1.8,10000
+Intruder,1.8,1.9,10000
+Jester,2.9,3.1,22000
+Jester,3.1,3.3,24000
+Jester,3.3,3.5,26000
+Jester,3.5,3.7,28000
+Journey,1.1,1.2,6000
+Journey,1.2,1.3,6000
+Journey,1.3,1.4,6000
+Journey,1.4,1.5,8000
+Landstalker,2.5,2.7,18000
+Landstalker,2.7,2.9,20000
+Landstalker,2.9,3.1,22000
+Landstalker,3.1,3.3,24000
+Majestic,2.1,2.3,14000
+Majestic,2.3,2.5,16000
+Majestic,2.5,2.7,18000
+Majestic,2.7,2.9,20000
+Manana,Manana DTM,1.7,1.8,10000
+Manana,Manana DTM,1.8,1.9,10000
+Manana,Manana DTM,1.9,2.0,12000
+Manana,Manana DTM,2.0,2.1,12000
+Merit,2.1,2.3,14000
+Merit,2.3,2.5,16000
+Merit,2.5,2.7,18000
+Merit,2.7,2.9,20000
+Mesa,Mesa Rubicon,2.3,2.5,16000
+Mesa,Mesa Rubicon,2.5,2.7,18000
+Mesa,Mesa Rubicon,2.7,2.9,20000
+Mesa,Mesa Rubicon,2.9,3.1,22000
+Monroe,3.0,3.3,24000
+Monroe,3.3,3.6,28000
+Monroe,3.6,3.9,30000
+Monroe,3.9,4.2,34000
+Moonbeam,1.2,1.3,6000
+Moonbeam,1.3,1.4,8000
+Moonbeam,1.4,1.5,8000
+Moonbeam,1.5,1.6,8000
+Mule,1.5,1.6,8000
+Mule,1.6,1.7,8000
+Mule,1.7,1.8,10000
+Mule,1.8,1.9,10000
+Nebula,1.8,1.9,10000
+Nebula,1.9,2.0,12000
+Nebula,2.0,2.1,12000
+Nebula,2.1,2.2,14000
+NRG-500,1.0,1.05,4000
+NRG-500,1.05,1.1,4000
+NRG-500,1.1,1.15,4000
+NRG-500,1.15,1.2,6000
+Oceanic,1.3,1.4,6000
+Oceanic,1.4,1.5,8000
+Oceanic,1.5,1.6,8000
+Oceanic,1.6,1.7,8000
+Patriot,2.5,2.7,18000
+Patriot,2.7,2.9,20000
+Patriot,2.9,3.1,22000
+Patriot,3.1,3.3,24000
+PCJ-600,PCJ-600 XR,0.5,0.55,8000
+PCJ-600,PCJ-600 XR,0.55,0.6,8000
+PCJ-600,PCJ-600 XR,0.6,0.65,8000
+PCJ-600,PCJ-600 XR,0.65,0.7,8000
+Perennial,1.5,1.6,8000
+Perennial,1.6,1.7,8000
+Perennial,1.7,1.8,10000
+Perennial,1.8,1.9,10000
+Phoenix,2.6,2.8,18000
+Phoenix,2.8,3.0,20000
+Phoenix,3.0,3.2,22000
+Phoenix,3.2,3.4,26000
+Picador,2.5,2.7,18000
+Picador,2.7,2.9,20000
+Picador,2.9,3.1,22000
+Picador,3.1,3.3,24000
+Premier,2.1,2.3,14000
+Premier,2.3,2.5,16000
+Premier,2.5,2.7,18000
+Premier,2.7,2.9,20000
+Previon,1.5,1.6,8000
+Previon,1.6,1.7,8000
+Previon,1.7,1.8,10000
+Previon,1.8,1.9,10000
+Primo,Primo Kombi,1.5,1.6,8000
+Primo,Primo Kombi,1.6,1.7,8000
+Primo,Primo Kombi,1.7,1.8,10000
+Primo,Primo Kombi,1.8,1.9,10000
+Quadbike,0.4,0.48,8000
+Quadbike,0.48,0.56,8000
+Quadbike,0.56,0.64,8000
+Quadbike,0.64,0.72,10000
+Rancher,1.8,1.9,10000
+Rancher,1.9,2.0,12000
+Rancher,2.0,2.1,12000
+Rancher,2.1,2.2,14000
+Regina,Regina Sedan,3.6,4.0,32000
+Regina,Regina Sedan,4.0,4.4,36000
+Regina,Regina Sedan,4.4,4.8,42000
+Regina,Regina Sedan,4.8,5.2,48000
+Remington,2.2,2.4,14000
+Remington,2.4,2.6,16000
+Remington,2.6,2.8,18000
+Remington,2.8,3.0,20000
+Rumpo,1.5,1.6,8000
+Rumpo,1.6,1.7,8000
+Rumpo,1.7,1.8,10000
+Rumpo,1.8,1.9,10000
+Sabre,2.3,2.5,16000
+Sabre,2.5,2.7,18000
+Sabre,2.7,2.9,20000
+Sabre,2.9,3.1,22000
+Sadler,2.5,2.7,18000
+Sadler,2.7,2.9,20000
+Sadler,2.9,3.1,22000
+Sadler,3.1,3.3,24000
+Sanchez,0.3,0.375,6000
+Sanchez,0.375,0.45,6000
+Sanchez,0.45,0.525,8000
+Sanchez,0.525,0.6,8000
+Sandking,2.9,3.1,22000
+Sandking,3.1,3.3,24000
+Sandking,3.3,3.5,26000
+Sandking,3.5,3.7,28000
+Savanna,2.3,2.5,16000
+Savanna,2.5,2.7,18000
+Savanna,2.7,2.9,20000
+Savanna,2.9,3.1,22000
+Schafter,2.1,2.3,14000
+Schafter,2.3,2.5,16000
+Schafter,2.5,2.7,18000
+Schafter,2.7,2.9,20000
+Securicar,1.2,1.3,6000
+Securicar,1.3,1.4,6000
+Securicar,1.4,1.5,8000
+Securicar,1.5,1.6,8000
+Sentinel,Sentinel Kombi,2.3,2.5,16000
+Sentinel,Sentinel Kombi,2.5,2.7,18000
+Sentinel,Sentinel Kombi,2.7,2.9,20000
+Sentinel,Sentinel Kombi,2.9,3.1,22000
+Slamvan,4.8,5.2,48000
+Slamvan,5.2,5.6,54000
+Slamvan,5.6,6.0,58000
+Slamvan,6.0,6.4,64000
+Solair,1.8,1.9,10000
+Solair,1.9,2.0,12000
+Solair,2.0,2.1,12000
+Solair,2.1,2.2,14000
+Speedvan,2.5,2.7,18000
+Speedvan,2.7,2.9,20000
+Speedvan,2.9,3.1,22000
+Speedvan,3.1,3.3,24000
+Stafford,2.3,2.5,16000
+Stafford,2.5,2.7,18000
+Stafford,2.7,2.9,20000
+Stafford,2.9,3.1,22000
+Stallion,Stallion GTT,2.2,2.4,14000
+Stallion,Stallion GTT,2.4,2.6,16000
+Stallion,Stallion GTT,2.6,2.8,18000
+Stallion,Stallion GTT,2.8,3.0,20000
+Stanier,3.0,3.4,26000
+Stanier,3.4,3.8,30000
+Stanier,3.8,4.2,34000
+Stanier,4.2,4.6,40000
+Stratum,1.8,1.9,10000
+Stratum,1.9,2.0,12000
+Stratum,2.0,2.1,12000
+Stratum,2.1,2.2,14000
+Stretch,1.5,1.6,8000
+Stretch,1.6,1.7,8000
+Stretch,1.7,1.8,10000
+Stretch,1.8,1.9,10000
+Sultan,Sultan Kombi,2.9,3.1,22000
+Sultan,Sultan Kombi,3.1,3.3,24000
+Sultan,Sultan Kombi,3.3,3.5,26000
+Sultan,Sultan Kombi,3.5,3.7,28000
+Sunrise,Sunrise Kombi,1.4,1.5,8000
+Sunrise,Sunrise Kombi,1.5,1.6,8000
+Sunrise,Sunrise Kombi,1.6,1.7,8000
+Sunrise,Sunrise Kombi,1.7,1.8,10000
+Super GT,2.6,2.8,18000
+Super GT,2.8,3.0,20000
+Super GT,3.0,3.2,22000
+Super GT,3.2,3.4,26000
+Tahoma,2.3,2.5,16000
+Tahoma,2.5,2.7,18000
+Tahoma,2.7,2.9,20000
+Tahoma,2.9,3.1,22000
+Tampa,2.3,2.5,16000
+Tampa,2.5,2.7,18000
+Tampa,2.7,2.9,20000
+Tampa,2.9,3.1,22000
+Tornado,1.8,1.9,10000
+Tornado,1.9,2.0,12000
+Tornado,2.0,2.1,12000
+Tornado,2.1,2.2,14000
+Turismo,Turismo Competizione,3.2,3.5,26000
+Turismo,Turismo Competizione,3.5,3.8,30000
+Turismo,Turismo Competizione,3.8,4.1,34000
+Turismo,Turismo Competizione,4.1,4.4,36000
+Uranus,1.8,1.9,10000
+Uranus,1.9,2.0,12000
+Uranus,2.0,2.1,12000
+Uranus,2.1,2.2,14000
+Vincent,1.5,1.6,8000
+Vincent,1.6,1.7,8000
+Vincent,1.7,1.8,10000
+Vincent,1.8,1.9,10000
+Virgo,1.5,1.6,8000
+Virgo,1.6,1.7,8000
+Virgo,1.7,1.8,10000
+Virgo,1.8,1.9,10000
+Voodoo,2.2,2.4,14000
+Voodoo,2.4,2.6,16000
+Voodoo,2.6,2.8,18000
+Voodoo,2.8,3.0,20000
+Walton,1.1,1.2,6000
+Walton,1.2,1.3,6000
+Walton,1.3,1.4,6000
+Walton,1.4,1.5,8000
+Washington,1.9,2.0,12000
+Washington,2.0,2.1,12000
+Washington,2.1,2.2,14000
+Washington,2.2,2.3,14000
+Wayfarer,1.4,1.5,8000
+Wayfarer,1.5,1.6,8000
+Wayfarer,1.6,1.7,8000
+Wayfarer,1.7,1.8,10000
+Willard,Willard Kombi,1.5,1.6,8000
+Willard,Willard Kombi,1.6,1.7,8000
+Willard,Willard Kombi,1.7,1.8,10000
+Willard,Willard Kombi,1.8,1.9,10000
+Windsor,3.2,3.5,26000
+Windsor,3.5,3.8,30000
+Windsor,3.8,4.1,34000
+Windsor,4.1,4.4,36000
+Yankee,1.1,1.2,6000
+Yankee,1.2,1.3,6000
+Yankee,1.3,1.4,6000
+Yankee,1.4,1.5,8000
+Yosemite,2.5,2.7,18000
+Yosemite,2.7,2.9,20000
+Yosemite,2.9,3.1,22000
+Yosemite,3.1,3.3,24000
+ZR-350,2.9,3.1,22000
+ZR-350,3.1,3.3,24000
+ZR-350,3.3,3.5,26000
+ZR-350,3.5,3.7,28000
