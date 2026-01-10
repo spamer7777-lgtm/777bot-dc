@@ -228,24 +228,25 @@ namespace _777bot
                     else
                         res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
                 }
-else
-{
-    string mapped;
-    string key;
+                else
+                {
+                    string mapped;
+                    string key;
 
-    // specjalne formaty ze strony: Przyciemnienie/Poszerzenia/Rozmiar felg
-    if (TryMapSpecialVisualName(v.Name, out mapped))
-        key = TextNorm.NormalizeKey(mapped);
-    else
-        key = TextNorm.NormalizeKey(v.Name);
+                    // specjalne formaty ze strony: Przyciemnienie/Poszerzenia/Rozmiar felg
+                    if (TryMapSpecialVisualName(v.Name, out mapped))
+                        key = TextNorm.NormalizeKey(mapped);
+                    else
+                        key = TextNorm.NormalizeKey(v.Name);
 
-    long price;
-    if (_cat.VisualByName.TryGetValue(key, out price))
-        res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
-    else
-        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
-}
-                
+                    long price;
+                    if (_cat.VisualByName.TryGetValue(key, out price))
+                        res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
+                    else
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
+                }
+            }
+
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
             await AddColorAsync(res, SpecialColorType.Dashboard, card.DashboardColorRaw);
         }
@@ -314,9 +315,10 @@ else
                 long basePrice;
                 if (_cat.MechByKey.TryGetValue(key, out basePrice))
                 {
+                    // Zestawy i CFI liczymy 100% (zgodnie z Twoim wymaganiem dla Zestaw (T))
                     var isFull =
                         key.StartsWith("c.f.i:", StringComparison.OrdinalIgnoreCase) ||
-                        key.Equals("zestaw:torowy", StringComparison.OrdinalIgnoreCase);
+                        key.StartsWith("zestaw:", StringComparison.OrdinalIgnoreCase);
 
                     var mult = isFull ? 1.0 : 0.5;
                     var market = (long)Math.Round(basePrice * mult);
@@ -347,82 +349,25 @@ else
                 var cap = ExtractLiters(key);
                 return cap != "" ? "lpg:" + cap : "lpg";
             }
-        private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
-{
-    mappedKey = "";
-    if (string.IsNullOrWhiteSpace(rawName)) return false;
+            if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
+            {
+                // np. "zestaw (t)" / "zestaw t" / "zestaw torowy"
+                var kind = key.Replace("zestaw", "").Trim().Trim(':');
 
-    var s = TextNorm.Normalize(rawName);
+                if (string.IsNullOrWhiteSpace(kind))
+                    return "zestaw";
 
-    // Przyciemnienie szyb (70%)
-    var tint = System.Text.RegularExpressions.Regex.Match(
-        s,
-        @"^Przyciemnienie\s+szyb\s*\(\s*(?<p>\d{1,3})\s*%\s*\)\s*$",
-        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                // usuń nawiasy
+                kind = kind.Trim().Trim('(', ')').Trim();
 
-    if (tint.Success)
-    {
-        mappedKey = "przyciemnienie_szyb:" + tint.Groups["p"].Value;
-        return true;
-    }
+                var k = TextNorm.NormalizeKey(kind); // np. "t"
+                if (k == "t") k = "torowy";
+                else if (k == "u") k = "uliczny";
+                else if (k == "w") k = "wyscigowy";
+                else if (k == "d") k = "drifterski";
 
-    // Poszerzenia (2,2)
-    var widen = System.Text.RegularExpressions.Regex.Match(
-        s,
-        @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
-        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-    if (widen.Success)
-    {
-        mappedKey = $"poszerzenia:{widen.Groups["f"].Value},{widen.Groups["r"].Value}";
-        return true;
-    }
-
-    // Rozmiar felg (Duże)
-    var rimSize = System.Text.RegularExpressions.Regex.Match(
-        s,
-        @"^Rozmiar\s+felg\s*\(\s*(?<v>.+?)\s*\)\s*$",
-        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-    if (rimSize.Success)
-    {
-        var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
-
-        // parę bezpiecznych wariantów (polskie znaki / spacje)
-        v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
-             .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
-
-        // ujednolicenia
-        if (v.Contains("bardzo") && v.Contains("male")) v = "bardzo_male";
-        else if (v.Contains("male")) v = "male";
-        else if (v.Contains("duze")) v = "duze";
-        else if (v.Contains("standard")) v = "standardowe";
-
-        mappedKey = "rozmiar_felg:" + v;
-        return true;
-    }
-
-    return false;
-}
-            
-if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
-{
-    // np. "zestaw (t)" / "zestaw t" / "zestaw torowy"
-    var kind = key.Replace("zestaw", "").Trim().Trim(':');
-    if (string.IsNullOrWhiteSpace(kind)) return "zestaw";
-
-    // usuń nawiasy i zbędne znaki
-    kind = kind.Trim().Trim('(', ')').Trim();
-
-    // mapowanie skrótów
-    var k = TextNorm.NormalizeKey(kind); // np. "t"
-    if (k == "t") k = "torowy";
-    else if (k == "u") k = "uliczny";
-    else if (k == "w") k = "wyścigowy";
-    else if (k == "d") k = "drifterski";
-
-    return "zestaw:" + TextNorm.NormalizeKey(k);
-}
+                return "zestaw:" + TextNorm.NormalizeKey(k);
+            }
             if (key.StartsWith("c.f.i", StringComparison.OrdinalIgnoreCase) || key.StartsWith("cfi", StringComparison.OrdinalIgnoreCase))
             {
                 var v = ExtractV(key);
@@ -430,6 +375,64 @@ if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
             }
 
             return key;
+        }
+
+        // ======= VISUAL SPECIAL PARSING (Przyciemnienie / Poszerzenia / Rozmiar felg) =======
+        private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
+        {
+            mappedKey = "";
+            if (string.IsNullOrWhiteSpace(rawName)) return false;
+
+            var s = TextNorm.Normalize(rawName);
+
+            // Przyciemnienie szyb (70%)
+            var tint = System.Text.RegularExpressions.Regex.Match(
+                s,
+                @"^Przyciemnienie\s+szyb\s*\(\s*(?<p>\d{1,3})\s*%\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (tint.Success)
+            {
+                mappedKey = "przyciemnienie_szyb:" + tint.Groups["p"].Value;
+                return true;
+            }
+
+            // Poszerzenia (2,2)
+            var widen = System.Text.RegularExpressions.Regex.Match(
+                s,
+                @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (widen.Success)
+            {
+                mappedKey = $"poszerzenia:{widen.Groups["f"].Value},{widen.Groups["r"].Value}";
+                return true;
+            }
+
+            // Rozmiar felg (Duże)
+            var rimSize = System.Text.RegularExpressions.Regex.Match(
+                s,
+                @"^Rozmiar\s+felg\s*\(\s*(?<v>.+?)\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (rimSize.Success)
+            {
+                var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
+
+                // spolszczenia -> ascii (na wszelki wypadek)
+                v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
+                     .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
+
+                if (v.Contains("bardzo") && v.Contains("male")) v = "bardzo_male";
+                else if (v.Contains("male")) v = "male";
+                else if (v.Contains("duze")) v = "duze";
+                else if (v.Contains("standard")) v = "standardowe";
+
+                mappedKey = "rozmiar_felg:" + v;
+                return true;
+            }
+
+            return false;
         }
 
         private static string ExtractV(string key)
