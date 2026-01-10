@@ -1,0 +1,36 @@
+Category,Variant,Price
+ECU,V1,10500
+ECU,V2,18000
+ECU,V3,30000
+ECU,V4,40000
+Turbo,V1,15000
+Turbo,V2,25000
+Turbo,V3,40000
+Turbo,V4,50000
+Turbo,V5,60000
+LPG,25L,20000
+LPG,50L,25000
+LPG,75L,35000
+Zestaw,Uliczny,50000
+Zestaw,Wyścigowy,100000
+Zestaw,Drifterski,150000
+Zestaw,Torowy,250000
+C.F.I.,V1,125000
+C.F.I.,V2,150000
+C.F.I.,V3,175000
+C.F.I.,V4,225000
+C.F.I.,V5,250000
+Zmiana napędu,RWD,30000
+Zmiana napędu,AWD,50000
+Zmiana napędu,FWD,20000
+Zmiana napędu,MZN,75000
+Bak paliwa,100L,45000
+Bak paliwa,125L,55000
+Bak paliwa,150L,65000
+Inne,Radio,500
+Inne,CB-radio,1500
+Inne,Ogranicznik,2000
+Inne,Wykrywacz fotoradarów,2500
+Inne,System ABS,15000
+Inne,Gwintowane zawieszenie,32500
+Inne,Hydraulika,45000
