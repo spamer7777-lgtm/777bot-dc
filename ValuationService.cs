@@ -222,11 +222,11 @@ namespace _777bot
             {
                 if (v.Id != 0)
                 {
-                    long price;
-                    if (_cat.VisualById.TryGetValue(v.Id, out price))
-                        res.VisualItems.Add(($"{v.Name} ({v.Id})", price, (long)Math.Round(price * 0.5)));
-                    else
-                        res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
+long namePrice;
+if (_cat.VisualByName.TryGetValue(key, out namePrice))
+    res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
+else
+    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
 
                     continue;
                 }
