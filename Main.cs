@@ -10,6 +10,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Collections.Generic;
 
+// ✅ WYCENA: nowe usingi (Twoje nowe klasy)
+using _777bot;
+
 public static class Bot
 {
     private const ulong TubasStickerId = 1435403416733225174;
@@ -45,12 +48,33 @@ public static class Bot
     private static readonly int creditAmountMin = 1;
     private static readonly int creditAmountMax = 5;
 
+    // =========================================================
+    // ✅ WYCENA: globalne serwisy + pending
+    // =========================================================
+    public static PriceCatalog PriceCatalog { get; private set; } = new();
+    public static VehicleMongoStore VehicleStore { get; private set; } = null!;
+    public static ValuationService ValuationService { get; private set; } = null!;
+    public static Dictionary<ulong, PendingWycenaState> PendingWycena { get; private set; } = new();
+
     public static async Task Main()
     {
         var token = Environment.GetEnvironmentVariable("DISCORD_TOKEN");
         if (string.IsNullOrEmpty(token))
             throw new ArgumentException("DISCORD_TOKEN is not set!");
-        
+
+        // ✅ WYCENA: init (nie dotyka reszty)
+        try
+        {
+            PriceCatalog = PriceCatalogLoader.LoadFromDataFolder(System.IO.Path.Combine(AppContext.BaseDirectory, "data"));
+            VehicleStore = new VehicleMongoStore();
+            ValuationService = new ValuationService(PriceCatalog, VehicleStore);
+            Console.WriteLine("✅ Wycena: załadowano cenniki + Mongo gotowe.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WYCENA INIT ERROR] {ex}");
+        }
+
         Client.Ready += Ready;
         Client.Log += Log;
         Client.MessageReceived += MessageReceivedHandler;
@@ -101,6 +125,123 @@ public static class Bot
         if (message.Author is not SocketGuildUser user) return;
         if (message.Attachments.Any()) return;
 
+        // =========================================================
+        // ✅ WYCENA: obsługa "wklejki" i "podaj ceny limitowane"
+        // =========================================================
+        if (PendingWycena.TryGetValue(user.Id, out var pending))
+        {
+            // timeout
+            if (DateTime.UtcNow > pending.ExpiresAtUtc)
+            {
+                PendingWycena.Remove(user.Id);
+                await message.Channel.SendMessageAsync($"⏱️ {user.Mention} timeout. Zrób ponownie `/wycena vuid:{pending.Vuid}`.");
+                return;
+            }
+
+            // tylko na tym samym kanale
+            if (message.Channel.Id != pending.ChannelId) return;
+
+            // 1) czekamy na wklejkę karty pojazdu
+            if (pending.Kind == PendingKind.WaitingForVehiclePaste)
+            {
+                if (VehicleStore == null || ValuationService == null)
+                {
+                    PendingWycena.Remove(user.Id);
+                    await message.Channel.SendMessageAsync($"❌ {user.Mention} wycena nie jest zainicjalizowana (sprawdź logi/env Mongo).");
+                    return;
+                }
+
+                if (!VehicleCardParser.TryParse(message.Content, out var card, out var err))
+                {
+                    await message.Channel.SendMessageAsync($"❌ {user.Mention} Nie umiem tego sparsować: **{err}**\nWklej pełną kartę pojazdu (VUID/Model/Silnik/Tuning...).");
+                    return;
+                }
+
+                if (card.Vuid != pending.Vuid)
+                {
+                    await message.Channel.SendMessageAsync($"❌ {user.Mention} Wklejka ma VUID **{card.Vuid}**, a czekam na **{pending.Vuid}**.");
+                    return;
+                }
+
+                await VehicleStore.UpsertVehicleAsync(card);
+
+                // jeśli limitowane/unikatowe i brak ceny w DB -> poproś o ceny
+                var missingSpecial = await GetMissingSpecialColorsAsync(card);
+                if (missingSpecial.Count > 0)
+                {
+                    pending.Kind = PendingKind.WaitingForSpecialColorPrices;
+                    pending.MissingSpecialColors = missingSpecial;
+                    pending.ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10);
+                    PendingWycena[user.Id] = pending;
+
+                    await message.Channel.SendMessageAsync(BuildSpecialColorPricePrompt(user, pending));
+                    return;
+                }
+
+                var result = await ValuationService.EvaluateAsync(card);
+                PendingWycena.Remove(user.Id);
+                await message.Channel.SendMessageAsync(embed: result.BuildEmbed(pending.Vuid, card));
+                return;
+            }
+
+            // 2) czekamy na ceny limitowane/unikatowe (wpisywane przez użytkownika)
+            if (pending.Kind == PendingKind.WaitingForSpecialColorPrices)
+            {
+                if (VehicleStore == null || ValuationService == null)
+                {
+                    PendingWycena.Remove(user.Id);
+                    await message.Channel.SendMessageAsync($"❌ {user.Mention} wycena nie jest zainicjalizowana (sprawdź logi/env Mongo).");
+                    return;
+                }
+
+                var parsed = ParseSpecialColorPriceReply(message.Content);
+
+                // aplikujemy ceny: jeśli user poda "licznik=..." to ustawiamy dla wszystkich brakujących liczników itd.
+                var stillMissing = new List<(SpecialColorType type, string name, string rarity)>();
+
+                foreach (var need in pending.MissingSpecialColors)
+                {
+                    if (parsed.TryGetValue(need.type, out var price))
+                    {
+                        await VehicleStore.UpsertSpecialColorPriceAsync(need.type, need.name, need.rarity, price, user.Id);
+                    }
+                    else
+                    {
+                        stillMissing.Add(need);
+                    }
+                }
+
+                if (stillMissing.Count > 0)
+                {
+                    pending.MissingSpecialColors = stillMissing;
+                    PendingWycena[user.Id] = pending;
+
+                    await message.Channel.SendMessageAsync(
+                        $"❌ {user.Mention} Nadal brakuje cen dla:\n" +
+                        string.Join("\n", stillMissing.Select(x => $"- {(x.type == SpecialColorType.Dashboard ? "licznik" : "swiatla")}: {x.name} - {x.rarity}")) +
+                        "\nPodaj w formie:\n`licznik=35000`\n`swiatla=55000`"
+                    );
+                    return;
+                }
+
+                var card = await VehicleStore.GetVehicleAsync(pending.Vuid);
+                if (card == null)
+                {
+                    PendingWycena.Remove(user.Id);
+                    await message.Channel.SendMessageAsync($"❌ {user.Mention} Nie mogę znaleźć zapisanych danych VUID {pending.Vuid} po zapisaniu cen.");
+                    return;
+                }
+
+                var result2 = await ValuationService.EvaluateAsync(card);
+                PendingWycena.Remove(user.Id);
+                await message.Channel.SendMessageAsync(embed: result2.BuildEmbed(pending.Vuid, card));
+                return;
+            }
+        }
+
+        // =========================================================
+        // Twoja logika triggerów (bez zmian)
+        // =========================================================
         string contentLower = message.Content.ToLowerInvariant();
         string[] words = contentLower.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
@@ -248,5 +389,79 @@ public static class Bot
         Console.WriteLine($"{log.Severity}: {log.Source} {log.Message}");
         return Task.CompletedTask;
     }
-}
 
+    // =========================================================
+    // ✅ WYCENA: helpery (tylko to, co potrzebne)
+    // =========================================================
+    private static async Task<List<(SpecialColorType type, string name, string rarity)>> GetMissingSpecialColorsAsync(VehicleCard card)
+    {
+        var list = new List<(SpecialColorType type, string name, string rarity)>();
+
+        // lights
+        var (lName, lRarity) = VehicleCardParser.ParseColorWithRarity(card.LightsColorRaw);
+        if (!string.IsNullOrWhiteSpace(lName) &&
+            (lRarity.Equals("Limitowane", StringComparison.OrdinalIgnoreCase) || lRarity.Equals("Unikatowe", StringComparison.OrdinalIgnoreCase)))
+        {
+            var p = await VehicleStore.GetSpecialColorPriceAsync(SpecialColorType.Lights, lName, lRarity);
+            if (!p.HasValue) list.Add((SpecialColorType.Lights, lName, lRarity));
+        }
+
+        // dashboard
+        var (dName, dRarity) = VehicleCardParser.ParseColorWithRarity(card.DashboardColorRaw);
+        if (!string.IsNullOrWhiteSpace(dName) &&
+            (dRarity.Equals("Limitowane", StringComparison.OrdinalIgnoreCase) || dRarity.Equals("Unikatowe", StringComparison.OrdinalIgnoreCase)))
+        {
+            var p = await VehicleStore.GetSpecialColorPriceAsync(SpecialColorType.Dashboard, dName, dRarity);
+            if (!p.HasValue) list.Add((SpecialColorType.Dashboard, dName, dRarity));
+        }
+
+        // unique
+        return list
+            .GroupBy(x => (x.type, TextNorm.NormalizeKey(x.name), TextNorm.NormalizeKey(x.rarity)))
+            .Select(g => g.First())
+            .ToList();
+    }
+
+    private static string BuildSpecialColorPricePrompt(SocketGuildUser user, PendingWycenaState pending)
+    {
+        var lines = pending.MissingSpecialColors.Select(x =>
+            $"- {(x.type == SpecialColorType.Dashboard ? "licznik" : "swiatla")}: {x.name} - {x.rarity}");
+
+        return $"🧾 {user.Mention} Podaj ceny dla limitowanych/unikatowych kolorów (bot zapamięta):\n" +
+               string.Join("\n", lines) +
+               "\n\nPodaj w wiadomości np.:\n`licznik=35000`\n`swiatla=55000`\n(możesz podać jedną albo dwie linie)";
+    }
+
+    private static Dictionary<SpecialColorType, long> ParseSpecialColorPriceReply(string content)
+    {
+        // user może podać:
+        // licznik=35000
+        // swiatla=55000
+        // (lub ':' zamiast '=')
+        var dict = new Dictionary<SpecialColorType, long>();
+
+        foreach (var rawLine in content.Split('\n'))
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line)) continue;
+
+            var parts = line.Split(new[] { '=', ':' }, 2, StringSplitOptions.TrimEntries);
+            if (parts.Length != 2) continue;
+
+            var left = parts[0].Trim().ToLowerInvariant();
+            var right = parts[1].Trim()
+                .Replace("$", "")
+                .Replace(" ", "")
+                .Replace(",", "");
+
+            if (!long.TryParse(right, out var price)) continue;
+
+            if (left.Contains("licznik") || left.Contains("dashboard"))
+                dict[SpecialColorType.Dashboard] = price;
+            else if (left.Contains("swiat") || left.Contains("świat") || left.Contains("lights"))
+                dict[SpecialColorType.Lights] = price;
+        }
+
+        return dict;
+    }
+}
