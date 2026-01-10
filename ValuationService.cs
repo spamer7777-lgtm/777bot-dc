@@ -340,12 +340,24 @@ namespace _777bot
                 var cap = ExtractLiters(key);
                 return cap != "" ? "lpg:" + cap : "lpg";
             }
-            if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
-            {
-                var kind = key.Replace("zestaw", "").Trim().Trim(':');
-                if (string.IsNullOrWhiteSpace(kind)) return "zestaw";
-                return "zestaw:" + TextNorm.NormalizeKey(kind);
-            }
+if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
+{
+    // np. "zestaw (t)" / "zestaw t" / "zestaw torowy"
+    var kind = key.Replace("zestaw", "").Trim().Trim(':');
+    if (string.IsNullOrWhiteSpace(kind)) return "zestaw";
+
+    // usuń nawiasy i zbędne znaki
+    kind = kind.Trim().Trim('(', ')').Trim();
+
+    // mapowanie skrótów
+    var k = TextNorm.NormalizeKey(kind); // np. "t"
+    if (k == "t") k = "torowy";
+    else if (k == "u") k = "uliczny";
+    else if (k == "w") k = "wyścigowy";
+    else if (k == "d") k = "drifterski";
+
+    return "zestaw:" + TextNorm.NormalizeKey(k);
+}
             if (key.StartsWith("c.f.i", StringComparison.OrdinalIgnoreCase) || key.StartsWith("cfi", StringComparison.OrdinalIgnoreCase))
             {
                 var v = ExtractV(key);
