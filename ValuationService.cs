@@ -228,15 +228,23 @@ namespace _777bot
                     else
                         res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
                 }
-                else
-                {
-                    var key = TextNorm.NormalizeKey(v.Name);
-                    long price;
-                    if (_cat.VisualByName.TryGetValue(key, out price))
-                        res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
-                    else
-                        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
-                }
+else
+{
+    string mapped;
+    string key;
+
+    // specjalne formaty ze strony: Przyciemnienie/Poszerzenia/Rozmiar felg
+    if (TryMapSpecialVisualName(v.Name, out mapped))
+        key = TextNorm.NormalizeKey(mapped);
+    else
+        key = TextNorm.NormalizeKey(v.Name);
+
+    long price;
+    if (_cat.VisualByName.TryGetValue(key, out price))
+        res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
+    else
+        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
+}
             }
 
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
