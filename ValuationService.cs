@@ -340,6 +340,64 @@ namespace _777bot
                 var cap = ExtractLiters(key);
                 return cap != "" ? "lpg:" + cap : "lpg";
             }
+        private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
+{
+    mappedKey = "";
+    if (string.IsNullOrWhiteSpace(rawName)) return false;
+
+    var s = TextNorm.Normalize(rawName);
+
+    // Przyciemnienie szyb (70%)
+    var tint = System.Text.RegularExpressions.Regex.Match(
+        s,
+        @"^Przyciemnienie\s+szyb\s*\(\s*(?<p>\d{1,3})\s*%\s*\)\s*$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    if (tint.Success)
+    {
+        mappedKey = "przyciemnienie_szyb:" + tint.Groups["p"].Value;
+        return true;
+    }
+
+    // Poszerzenia (2,2)
+    var widen = System.Text.RegularExpressions.Regex.Match(
+        s,
+        @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    if (widen.Success)
+    {
+        mappedKey = $"poszerzenia:{widen.Groups["f"].Value},{widen.Groups["r"].Value}";
+        return true;
+    }
+
+    // Rozmiar felg (Duże)
+    var rimSize = System.Text.RegularExpressions.Regex.Match(
+        s,
+        @"^Rozmiar\s+felg\s*\(\s*(?<v>.+?)\s*\)\s*$",
+        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    if (rimSize.Success)
+    {
+        var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
+
+        // parę bezpiecznych wariantów (polskie znaki / spacje)
+        v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
+             .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
+
+        // ujednolicenia
+        if (v.Contains("bardzo") && v.Contains("male")) v = "bardzo_male";
+        else if (v.Contains("male")) v = "male";
+        else if (v.Contains("duze")) v = "duze";
+        else if (v.Contains("standard")) v = "standardowe";
+
+        mappedKey = "rozmiar_felg:" + v;
+        return true;
+    }
+
+    return false;
+}
+            
 if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
 {
     // np. "zestaw (t)" / "zestaw t" / "zestaw torowy"
