@@ -23,13 +23,13 @@ namespace _777bot
         private static readonly Regex MechRe = new Regex(@"^\s*Tuning\s+mechaniczny\s*(?:\r?\n|\s)+(?<val>.+?)\s*$",
             RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-private static readonly Regex LightsColorRe = new Regex(
-    @"^\s*Kolor\s+świateł[ \t]+(?<val>.+?)\s*$",
-    RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        private static readonly Regex LightsColorRe = new Regex(
+            @"^\s*Kolor\s+świateł[ \t]+(?<val>.+?)\s*$",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-private static readonly Regex DashColorRe = new Regex(
-    @"^\s*Kolor\s+licznika[ \t]+(?<val>.+?)\s*$",
-    RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        private static readonly Regex DashColorRe = new Regex(
+            @"^\s*Kolor\s+licznika[ \t]+(?<val>.+?)\s*$",
+            RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         private static readonly Regex ModelIdRe = new Regex(@"\((?<id>\d+)\)\s*$", RegexOptions.Compiled);
         private static readonly Regex AeroRe = new Regex(@"\bAero\s+(I|II|III|IV)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -43,8 +43,7 @@ private static readonly Regex DashColorRe = new Regex(
             paste = paste.Replace("\u00A0", " "); // nbsp
 
             var vuidM = VuidRe.Match(paste);
-            int vuid;
-            if (!vuidM.Success || !int.TryParse(vuidM.Groups["vuid"].Value, out vuid))
+            if (!vuidM.Success || !int.TryParse(vuidM.Groups["vuid"].Value, out int vuid))
             {
                 error = "Nie widzę VUID w wklejce.";
                 return false;
@@ -83,43 +82,125 @@ private static readonly Regex DashColorRe = new Regex(
             if (dashM.Success)
                 card.DashboardColorRaw = TextNorm.Normalize(dashM.Groups["val"].Value);
 
-            ParseModel(card);
+            // ✅ Fallback: układ tabelkowy/łamanie linii potrafi zepsuć regexy kolorów
+            FixColorsFallback(paste, card);
 
+            ParseModel(card);
             return true;
         }
 
-private static List<string> SplitCommaList(string s)
-{
-    var res = new List<string>();
-    if (string.IsNullOrWhiteSpace(s)) return res;
-
-    var sb = new System.Text.StringBuilder();
-    int depth = 0;
-
-    foreach (var ch in s)
-    {
-        if (ch == '(') depth++;
-        else if (ch == ')') depth = Math.Max(0, depth - 1);
-
-        if (ch == ',' && depth == 0)
+        private static void FixColorsFallback(string paste, VehicleCard card)
         {
-            var part = TextNorm.Normalize(sb.ToString());
-            if (!string.IsNullOrWhiteSpace(part))
-                res.Add(part);
+            // jeżeli złapaliśmy ewidentnie złą wartość (np. "Kolor licznika")
+            bool lightsBad =
+                string.IsNullOrWhiteSpace(card.LightsColorRaw) ||
+                TextNorm.NormalizeKey(card.LightsColorRaw).StartsWith("kolor_licznika") ||
+                TextNorm.NormalizeKey(card.LightsColorRaw).StartsWith("kolor_swiatel");
 
-            sb.Clear();
-            continue;
+            bool dashBad =
+                string.IsNullOrWhiteSpace(card.DashboardColorRaw) ||
+                TextNorm.NormalizeKey(card.DashboardColorRaw).StartsWith("kolor_swiatel") ||
+                TextNorm.NormalizeKey(card.DashboardColorRaw).StartsWith("kolor_licznika");
+
+            if (!lightsBad && !dashBad) return;
+
+            TryParseColorsByLines(paste, out var lights, out var dash);
+
+            if (lightsBad && !string.IsNullOrWhiteSpace(lights))
+                card.LightsColorRaw = lights;
+
+            if (dashBad && !string.IsNullOrWhiteSpace(dash))
+                card.DashboardColorRaw = dash;
+
+            // dodatkowy bezpiecznik: jeśli po fallback nadal jest label — wyczyść
+            if (TextNorm.NormalizeKey(card.LightsColorRaw).StartsWith("kolor_licznika") ||
+                TextNorm.NormalizeKey(card.LightsColorRaw).StartsWith("kolor_swiatel"))
+                card.LightsColorRaw = "";
+
+            if (TextNorm.NormalizeKey(card.DashboardColorRaw).StartsWith("kolor_licznika") ||
+                TextNorm.NormalizeKey(card.DashboardColorRaw).StartsWith("kolor_swiatel"))
+                card.DashboardColorRaw = "";
         }
 
-        sb.Append(ch);
-    }
+        private static void TryParseColorsByLines(string paste, out string lights, out string dash)
+        {
+            lights = "";
+            dash = "";
 
-    var last = TextNorm.Normalize(sb.ToString());
-    if (!string.IsNullOrWhiteSpace(last))
-        res.Add(last);
+            var lines = paste.Replace("\r", "")
+                .Split('\n')
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToList();
 
-    return res;
-}
+            for (int i = 0; i < lines.Count; i++)
+            {
+                var line = lines[i];
+
+                if (line.StartsWith("Kolor świateł", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rest = line.Substring("Kolor świateł".Length).Trim();
+                    if (!string.IsNullOrWhiteSpace(rest))
+                    {
+                        lights = TextNorm.Normalize(rest);
+                    }
+                    else if (i + 1 < lines.Count)
+                    {
+                        var next = lines[i + 1];
+                        if (!next.StartsWith("Kolor licznika", StringComparison.OrdinalIgnoreCase))
+                            lights = TextNorm.Normalize(next);
+                    }
+                }
+
+                if (line.StartsWith("Kolor licznika", StringComparison.OrdinalIgnoreCase))
+                {
+                    var rest = line.Substring("Kolor licznika".Length).Trim();
+                    if (!string.IsNullOrWhiteSpace(rest))
+                    {
+                        dash = TextNorm.Normalize(rest);
+                    }
+                    else if (i + 1 < lines.Count)
+                    {
+                        var next = lines[i + 1];
+                        if (!next.StartsWith("Kolor świateł", StringComparison.OrdinalIgnoreCase))
+                            dash = TextNorm.Normalize(next);
+                    }
+                }
+            }
+        }
+
+        private static List<string> SplitCommaList(string s)
+        {
+            var res = new List<string>();
+            if (string.IsNullOrWhiteSpace(s)) return res;
+
+            var sb = new System.Text.StringBuilder();
+            int depth = 0;
+
+            foreach (var ch in s)
+            {
+                if (ch == '(') depth++;
+                else if (ch == ')') depth = Math.Max(0, depth - 1);
+
+                if (ch == ',' && depth == 0)
+                {
+                    var part = TextNorm.Normalize(sb.ToString());
+                    if (!string.IsNullOrWhiteSpace(part))
+                        res.Add(part);
+
+                    sb.Clear();
+                    continue;
+                }
+
+                sb.Append(ch);
+            }
+
+            var last = TextNorm.Normalize(sb.ToString());
+            if (!string.IsNullOrWhiteSpace(last))
+                res.Add(last);
+
+            return res;
+        }
 
         private static List<VisualItem> ParseVisualList(string s)
         {
@@ -131,8 +212,7 @@ private static List<string> SplitCommaList(string s)
                 var item = new VisualItem { Raw = t, Name = t };
 
                 var m = Regex.Match(t, @"\((?<id>\d+)\)\s*$");
-                int id;
-                if (m.Success && int.TryParse(m.Groups["id"].Value, out id))
+                if (m.Success && int.TryParse(m.Groups["id"].Value, out int id))
                 {
                     item.Id = id;
                     item.Name = TextNorm.Normalize(Regex.Replace(t, @"\s*\(\d+\)\s*$", ""));
@@ -154,8 +234,7 @@ private static List<string> SplitCommaList(string s)
             var raw = card.ModelRaw;
 
             var idM = ModelIdRe.Match(raw);
-            int mid;
-            if (idM.Success && int.TryParse(idM.Groups["id"].Value, out mid))
+            if (idM.Success && int.TryParse(idM.Groups["id"].Value, out int mid))
             {
                 card.ModelId = mid;
                 raw = raw.Substring(0, idM.Index).Trim();
