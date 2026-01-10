@@ -1,0 +1,45 @@
+Key,Price
+ecu:v1,10500
+ecu:v2,18000
+ecu:v3,30000
+ecu:v4,40000
+turbo:v1,15000
+turbo:v2,25000
+turbo:v3,40000
+turbo:v4,50000
+turbo:v5,60000
+lpg:25l,20000
+lpg:50l,25000
+lpg:75l,35000
+zestaw:uliczny,50000
+zestaw:wyścigowy,100000
+zestaw:drifterski,150000
+zestaw:torowy,250000
+c.f.i:v1,125000
+c.f.i:v2,150000
+c.f.i:v3,175000
+c.f.i:v4,225000
+c.f.i:v5,250000
+zmiana napędu:rwd,30000
+zmiana napędu:awd,50000
+zmiana napędu:fwd,20000
+zmiana napędu:mzn,75000
+bak paliwa:100l,45000
+bak paliwa:125l,55000
+bak paliwa:150l,65000
+radio,500
+cb-radio,1500
+ogranicznik,2000
+ogranicznik prędkości,2000
+wykrywacz fotoradarów,2500
+system abs,15000
+gwintowane zawieszenie,32500
+gwint. zawieszenie,32500
+hydraulika,45000
+moduł zmiany napędu,0
+zestaw:(t),50000
+zestaw:(w),100000
+zestaw:(d),150000
+Inne,Gwint. zawieszenie,32500
+Inne,Gwintowane zawieszenie,32500
+Zmiana napędu,Moduł zmiany napędu,0
