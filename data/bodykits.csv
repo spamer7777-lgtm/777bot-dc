@@ -1,0 +1,181 @@
+BaseModel,KitName,Level,Price
+Admiral,STR,25,35000
+Admiral,STR Aero,25,35000
+ALPHA,GT9000 T/R,13,33000
+ALPHA,GTO,20,50000
+ALPHA,GTO T/R,26,65000
+ALPHA,VR-4,38,90000
+ALPHA,VR-4 Aero I,38,90000
+ALPHA,VR-4 Aero II,38,90000
+ALPHA,GTO VR-4,44,110000
+ALPHA,GTO VR-4 Aero I,44,110000
+ALPHA,GTO VR-4 Aero II,44,110000
+Banshee,Viper,17,65000
+Blista,Rally,20,50000
+Blista,VX,28,55000
+Blista,VX Aero,30,57500
+Blista,GT,44,110000
+Blista,GT Aero,46,115000
+Bobcat,TRD,12,20000
+Bobcat,Offroad,16,28000
+Bravura,Custom,20,35000
+Bravura,GT,26,45000
+Bravura,GT Custom,30,65000
+Buffalo,Super Sport,25,45000
+Buffalo,HellCat,40,125000
+Buffalo,Challenger,60,185000
+Bullet,MK2,40,95000
+Cadrona,GTC,10,18000
+Cadrona,Krieger,32,65000
+Cadrona,Krieger Aero,6,5000
+Cadrona,DTM Aero,6,5000
+Cheetah,Le Manse,37,120000
+Cheetah,Classic,40,130000
+Cheetah,Classic Popup,40,135000
+Cheetah,LBWK,65,210000
+Cheetah,LBWK Popup,65,215000
+Celsion,MBS,32,60000
+Celsion,KKS,36,90000
+Celsion,BN,48,110000
+Celsion,Aero I,5,10000
+Celsion,Aero II,5,5000
+Celsion,Aero III,5,7500
+Clover,Demon,24,80000
+Clover,Turbo,30,95000
+Club,Rally SS,27,63000
+Club,Classic,28,65000
+Comet,Safari,10,40000
+Comet,GT,55,200000
+Comet,964,38,125000
+Comet,Popup,24,50000
+Comet,Safari Popup,28,60000
+Comet,964 Popup,44,155000
+Spoiler,Aero I,8,5000
+Spoiler,Aero II,10,7500
+Spoiler,Aero III,12,10000
+Spoiler,Aero IV,15,15000
+Contander,F-350,7,25000
+Elegant,Custom,40,68000
+Elegy,Drift,20,30000
+Elegy,RH5,45,110000
+Elegy,RH5 Pandem,55,130000
+Euros,GTS,30,90000
+Euros,GTS WB,40,115000
+Euros,C-1 Drift,50,150000
+Emperor,Zacoe,20,40000
+Emperor,KA-7 Aero,22,45000
+Emperor,KA-7,24,50000
+Emperor,Kouki,28,60000
+FCR-900,Sport,18,50000
+Feltzer,STR,40,100000
+Feroci,Custom Popup,55,155000
+Feroci,Custom,55,150000
+Flash,Rally,24,50000
+Flash,CS,32,90000
+Flash,EF,38,115000
+Flash,GT,44,140000
+Fortune,Rocket Bunny,40,100000
+Hermes,Custom,35,75000
+Huntley,Offroad,22,35000
+Huntley,XR,28,50000
+Huntley,Expedition,38,75000
+Huntley,STR,55,115000
+Jester,RDX,38,80000
+Jester,WNG,50,105000
+Journey,FL,10,14000
+Landstalker,Offroad,14,40000
+Landstalker,Rally,22,60000
+Landstalker,Custom,32,85000
+Majestic,GNX,30,55000
+Manana,Type I,34,55000
+Merit,Prestige,32,56000
+Merit,Sport,44,86000
+Mesa,Grande,30,60000
+Monroe,LBW,55,125000
+Moonbeam,Classic,6,10000
+Moonbeam,High top,14,25000
+Patriot,Expedition,28,60000
+Perennial,Classic,12,30000
+Phoenix,Bandit,38,105000
+Picador,Custom,22,40000
+Previon,HB,5,10000
+Previon,HB Aero,10,5000
+Previon,AEX,12,7500
+Previon,AEX HB,12,7500
+Previon,AEX HB Aero,14,12500
+Previon,HR,24,45000
+Previon,HR HB,24,45000
+Previon,HB HR Aero,26,50000
+Previon,HR AEX,24,52500
+Previon,HR AEX HB,26,52500
+Previon,HR AEX HB Aero,26,12500
+Previon,Rally,16,25000
+Previon,Rally HB,16,30000
+Previon,Rally HB Aero,18,30000
+Previon,Rally AEX,16,32500
+Previon,Rally AEX HB,16,32500
+Previon,Rally AEX HB Aero,18,37500
+Primo,LX,16,25000
+Rancher,Pickup,10,15000
+Rancher,OffRoad,26,65000
+Rancher,Pickup OffRoad,30,75000
+Rancher Long,Pickup,20,75000
+Rancher Long,OffRoad,38,85000
+Rancher Long,Pickup OffRoad,35,75000
+Regina,Turbo,20,30000
+Sabre,Classic,22,60000
+Sabre,Demon,24,80000
+Sabre,Turbo,30,95000
+Sadler,Stepside,14,20000
+Sanchez,SM,20,35000
+Sandking,Pickup,22,35000
+Sandking,City,24,45000
+Sandking,Pickup XJ,40,90000
+Sandking,XJ,45,100000
+Sentinel,Drift,8,30000
+Sentinel,Classic,20,30000
+Sentinel,Cliqtuning,50,95000
+Schafter,STR,35,100000
+Stanier,LX,12,20000
+Stanier,Marauder,26,65000
+Stanier,Aero,6,5000
+Solair,Custom,22,46000
+Sultan,Rally,35,60000
+Sultan,EV-1,40,65000
+Sultan,SB-1,45,75000
+Sunrise,Base,10,15000
+Sunrise,GTS,26,45000
+Super GT,Super Sport,35,90000
+Super GT,TRS,45,135000
+Speedvan,Civil,8,10000
+Speedvan,Hi-Top,10,7500
+Speedvan,STX,32,70000
+Speedvan,Hi-Top STX,36,77500
+Speedvan,Offroad,26,50000
+Speedvan,Hi-Top Offroad,30,57500
+Tahoma,Classic,24,28000
+Tampa,Daytona,18,55000
+Tampa,Drift,23,60000
+Tornado,Cabrio,12,20000
+Tornado,Custom,25,50000
+Tornado,Cabrio Custom,25,50000
+Turismo,Classic,40,80000
+Vincent,STD,18,35000
+Walton,F-250 Classic,3,7000
+Walton,F-350 Classic,5,13000
+Walton,Rat Road Classic,11,17000
+Willard,VLV,22,30000
+Willard,VLV Custom,34,65000
+Willard,VLV Custom Aero,36,68500
+Windsor,Classic,5,5000
+Windsor,GT,14,20000
+Windsor,Restomod,36,80000
+Windsor,Sportback,10,10000
+Windsor,Sportback GT,18,28000
+Windsor,Sportback Restomod,40,90000
+Yosemite,F-250,21,44000
+Yosemite,OFFROAD,30,58000
+Yosemite,EXPEDITION,35,65000
+ZR-350,Amemiya,45,135000
+ZR-350,Rocket Bunny,55,175000
+Quadbike,XTR,5,8000
