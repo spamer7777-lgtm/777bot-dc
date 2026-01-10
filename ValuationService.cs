@@ -187,7 +187,6 @@ namespace _777bot
 
         private async Task ComputeBodykitsAsync(VehicleCard card, ValuationResult res)
         {
-            // main bodykit: BaseModel + BodykitMainName
             if (!string.IsNullOrWhiteSpace(card.BodykitMainName))
             {
                 BodykitRow bk;
@@ -198,7 +197,6 @@ namespace _777bot
                 }
             }
 
-            // aero: baseModel = "Spoiler", name = "Aero III"
             if (!string.IsNullOrWhiteSpace(card.BodykitAeroName))
             {
                 BodykitRow bk;
@@ -220,21 +218,25 @@ namespace _777bot
         {
             foreach (var v in card.VisualTuning)
             {
+                // ======================
+                // 1) WIZUALNE PO ID
+                // ======================
                 if (v.Id != 0)
                 {
-long namePrice;
-if (_cat.VisualByName.TryGetValue(key, out namePrice))
-    res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
-else
-    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
+                    long idPrice;
+                    if (_cat.VisualById.TryGetValue(v.Id, out idPrice))
+                        res.VisualItems.Add(($"{v.Name} ({v.Id})", idPrice, (long)Math.Round(idPrice * 0.5)));
+                    else
+                        res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
 
                     continue;
                 }
 
-                // ======= SPECJALNE PARSOWANIE (Nazwy ze strony) =======
+                // ======================
+                // 2) SPECJALNE: Poszerzenia (2,2) -> przód + tył
+                // ======================
                 var s = TextNorm.Normalize(v.Name);
 
-                // ✅ Poszerzenia (2,2) -> DWA wpisy (przód + tył)
                 var widen = System.Text.RegularExpressions.Regex.Match(
                     s,
                     @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
@@ -246,42 +248,40 @@ else
                     var r = widen.Groups["r"].Value;
 
                     // przód
-                    {
-                        var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
-                        long priceF;
-                        if (_cat.VisualByName.TryGetValue(keyF, out priceF))
-                            res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
-                        else
-                            res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
-                    }
+                    var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
+                    long priceF;
+                    if (_cat.VisualByName.TryGetValue(keyF, out priceF))
+                        res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
+                    else
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
 
                     // tył
-                    {
-                        var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
-                        long priceR;
-                        if (_cat.VisualByName.TryGetValue(keyR, out priceR))
-                            res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
-                        else
-                            res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
-                    }
+                    var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
+                    long priceR;
+                    if (_cat.VisualByName.TryGetValue(keyR, out priceR))
+                        res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
+                    else
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
 
                     continue;
                 }
 
-                // reszta specjalnych formatów: Przyciemnienie / Rozmiar felg
-                string mapped;
+                // ======================
+                // 3) POZOSTAŁE: nazwa / mapowanie (przyciemnienie, rozmiar felg)
+                // ======================
+                string mappedKey;
                 string key;
 
-                if (TryMapSpecialVisualName(v.Name, out mapped))
-                    key = TextNorm.NormalizeKey(mapped);
+                if (TryMapSpecialVisualName(v.Name, out mappedKey))
+                    key = TextNorm.NormalizeKey(mappedKey);
                 else
                     key = TextNorm.NormalizeKey(v.Name);
 
-                long price;
-                if (_cat.VisualByName.TryGetValue(key, out price))
-                    res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
+                long namePrice;
+                if (_cat.VisualByName.TryGetValue(key, out namePrice))
+                    res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
                 else
-                    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
+                    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{key}')");
             }
 
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
@@ -442,6 +442,7 @@ else
             {
                 var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
 
+                // spolszczenia -> ascii (na wszelki wypadek)
                 v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
                      .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
 
