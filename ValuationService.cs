@@ -245,8 +245,7 @@ else
     else
         res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
 }
-            }
-
+                
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
             await AddColorAsync(res, SpecialColorType.Dashboard, card.DashboardColorRaw);
         }
