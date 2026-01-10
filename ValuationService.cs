@@ -227,24 +227,61 @@ namespace _777bot
                         res.VisualItems.Add(($"{v.Name} ({v.Id})", price, (long)Math.Round(price * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
+
+                    continue;
                 }
-                else
+
+                // ======= SPECJALNE PARSOWANIE (Nazwy ze strony) =======
+                var s = TextNorm.Normalize(v.Name);
+
+                // ✅ Poszerzenia (2,2) -> DWA wpisy (przód + tył)
+                var widen = System.Text.RegularExpressions.Regex.Match(
+                    s,
+                    @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (widen.Success)
                 {
-                    string mapped;
-                    string key;
+                    var f = widen.Groups["f"].Value;
+                    var r = widen.Groups["r"].Value;
 
-                    // specjalne formaty ze strony: Przyciemnienie/Poszerzenia/Rozmiar felg
-                    if (TryMapSpecialVisualName(v.Name, out mapped))
-                        key = TextNorm.NormalizeKey(mapped);
-                    else
-                        key = TextNorm.NormalizeKey(v.Name);
+                    // przód
+                    {
+                        var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
+                        long priceF;
+                        if (_cat.VisualByName.TryGetValue(keyF, out priceF))
+                            res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
+                        else
+                            res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
+                    }
 
-                    long price;
-                    if (_cat.VisualByName.TryGetValue(key, out price))
-                        res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
-                    else
-                        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
+                    // tył
+                    {
+                        var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
+                        long priceR;
+                        if (_cat.VisualByName.TryGetValue(keyR, out priceR))
+                            res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
+                        else
+                            res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
+                    }
+
+                    continue;
                 }
+
+                // reszta specjalnych formatów: Przyciemnienie / Rozmiar felg
+                string mapped;
+                string key;
+
+                if (TryMapSpecialVisualName(v.Name, out mapped))
+                    key = TextNorm.NormalizeKey(mapped);
+                else
+                    key = TextNorm.NormalizeKey(v.Name);
+
+                long price;
+                if (_cat.VisualByName.TryGetValue(key, out price))
+                    res.VisualItems.Add((v.Name, price, (long)Math.Round(price * 0.5)));
+                else
+                    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
             }
 
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
@@ -315,7 +352,7 @@ namespace _777bot
                 long basePrice;
                 if (_cat.MechByKey.TryGetValue(key, out basePrice))
                 {
-                    // Zestawy i CFI liczymy 100% (zgodnie z Twoim wymaganiem dla Zestaw (T))
+                    // ✅ Zestawy i CFI liczymy 100%
                     var isFull =
                         key.StartsWith("c.f.i:", StringComparison.OrdinalIgnoreCase) ||
                         key.StartsWith("zestaw:", StringComparison.OrdinalIgnoreCase);
@@ -351,16 +388,14 @@ namespace _777bot
             }
             if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
             {
-                // np. "zestaw (t)" / "zestaw t" / "zestaw torowy"
                 var kind = key.Replace("zestaw", "").Trim().Trim(':');
 
                 if (string.IsNullOrWhiteSpace(kind))
                     return "zestaw";
 
-                // usuń nawiasy
                 kind = kind.Trim().Trim('(', ')').Trim();
 
-                var k = TextNorm.NormalizeKey(kind); // np. "t"
+                var k = TextNorm.NormalizeKey(kind);
                 if (k == "t") k = "torowy";
                 else if (k == "u") k = "uliczny";
                 else if (k == "w") k = "wyscigowy";
@@ -377,7 +412,7 @@ namespace _777bot
             return key;
         }
 
-        // ======= VISUAL SPECIAL PARSING (Przyciemnienie / Poszerzenia / Rozmiar felg) =======
+        // ======= VISUAL SPECIAL PARSING (Przyciemnienie / Rozmiar felg) =======
         private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
         {
             mappedKey = "";
@@ -397,18 +432,6 @@ namespace _777bot
                 return true;
             }
 
-            // Poszerzenia (2,2)
-            var widen = System.Text.RegularExpressions.Regex.Match(
-                s,
-                @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            if (widen.Success)
-            {
-                mappedKey = $"poszerzenia:{widen.Groups["f"].Value},{widen.Groups["r"].Value}";
-                return true;
-            }
-
             // Rozmiar felg (Duże)
             var rimSize = System.Text.RegularExpressions.Regex.Match(
                 s,
@@ -419,7 +442,6 @@ namespace _777bot
             {
                 var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
 
-                // spolszczenia -> ascii (na wszelki wypadek)
                 v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
                      .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
 
