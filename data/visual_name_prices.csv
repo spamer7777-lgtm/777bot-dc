@@ -89,3 +89,13 @@ kolor_swiatel:Very Peri,85000
 kolor_swiatel:Rubinowy,90000
 kolor_swiatel:Winogronowy,90000
 kolor_swiatel:Oliwkowy,90000
+rozmiar_felg:standardowe,0
+rozmiar_felg:bardzo_male,10000
+rozmiar_felg:male,12500
+rozmiar_felg:duze,22500
+poszerzenia_przod:0,0
+poszerzenia_przod:1,8000
+poszerzenia_przod:2,15000
+poszerzenia_tyl:0,0
+poszerzenia_tyl:1,10000
+poszerzenia_tyl:2,18000
