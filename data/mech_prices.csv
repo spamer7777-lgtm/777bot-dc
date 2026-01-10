@@ -1,30 +1,113 @@
-Key,Price
+key,price
+
+# ================= ECU =================
+ecu:v1,10500
+ecu v1,10500
+ecu(v1),10500
+ecu:v2,18000
+ecu v2,18000
+ecu(v2),18000
+ecu:v3,30000
+ecu v3,30000
+ecu(v3),30000
+ecu:v4,40000
+ecu v4,40000
+ecu(v4),40000
+
+# ================= TURBO =================
+turbo:v1,15000
+turbo v1,15000
+turbo(v1),15000
+turbo:v2,25000
+turbo v2,25000
+turbo(v2),25000
+turbo:v3,40000
+turbo v3,40000
+turbo(v3),40000
+turbo:v4,50000
+turbo v4,50000
+turbo(v4),50000
+turbo:v5,60000
+turbo v5,60000
+turbo(v5),60000
+
+# ================= C.F.I =================
+c.f.i:v1,125000
+cfi:v1,125000
+c.f.i v1,125000
+cfi v1,125000
+c.f.i(v1),125000
+cfi(v1),125000
+
+c.f.i:v2,150000
+cfi:v2,150000
+c.f.i v2,150000
+cfi v2,150000
+c.f.i(v2),150000
+cfi(v2),150000
+
+c.f.i:v3,175000
+cfi:v3,175000
+c.f.i v3,175000
+cfi v3,175000
+c.f.i(v3),175000
+cfi(v3),175000
+
+c.f.i:v4,225000
+cfi:v4,225000
+c.f.i v4,225000
+cfi v4,225000
+c.f.i(v4),225000
+cfi(v4),225000
+
+c.f.i:v5,250000
+cfi:v5,250000
+c.f.i v5,250000
+cfi v5,250000
+c.f.i(v5),250000
+cfi(v5),250000
+
+# ================= ZESTAW =================
+zestaw:t,50000
+zestaw (t),50000
+zestaw uliczny,50000
+
+zestaw:w,100000
+zestaw (w),100000
+zestaw wyścigowy,100000
+
+zestaw:d,150000
+zestaw (d),150000
+zestaw drifterski,150000
+
+zestaw:torowy,250000
+zestaw torowy,250000
+
+# ================= INNE =================
 radio,500
 cb-radio,1500
+cb radio,1500
+
 ogranicznik,2000
+ogranicznik prędkości,2000
+
 wykrywacz fotoradarów,2500
 system abs,15000
+abs,15000
+
+gwint,32500
 gwintowane zawieszenie,32500
+gwint. zawieszenie,32500
+
 hydraulika,45000
 
-ecu:v1,10500
-ecu:v2,18000
-ecu:v3,30000
-ecu:v4,40000
-
-turbo:v1,15000
-turbo:v2,25000
-turbo:v3,40000
-turbo:v4,50000
-turbo:v5,60000
-
-c.f.i:v1,125000
-c.f.i:v2,150000
-c.f.i:v3,175000
-c.f.i:v4,225000
-c.f.i:v5,250000
-
-zestaw:uliczny,50000
-zestaw:wyścigowy,100000
-zestaw:drifterski,150000
-zestaw:torowy,250000
+# ================= NAPĘD =================
+napęd:rwd,30000
+rwd,30000
+napęd:awd,50000
+awd,50000
+napęd:fwd,20000
+fwd,20000
+napęd:mzn,75000
+mzn,75000
+moduł zmiany napędu,75000
