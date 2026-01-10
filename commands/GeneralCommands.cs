@@ -6,6 +6,9 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 
+// ✅ WYCENA: nowe usingi
+using _777bot;
+
 namespace Commands
 {
     public class NoGroup : InteractionModuleBase<SocketInteractionContext>
@@ -85,6 +88,99 @@ namespace Commands
                     .WithCurrentTimestamp()
                     .Build()
             );
+        }
+
+        // =========================================================
+        // ✅ WYCENA
+        // =========================================================
+        [SlashCommand("wycena", "Wycena pojazdu po VUID (jeśli brak w bazie, bot poprosi o wklejkę karty).")]
+        public async Task Wycena([Summary("vuid", "ID pojazdu (VUID)")] int vuid)
+        {
+            if (Bot.VehicleStore == null || Bot.ValuationService == null)
+            {
+                await RespondAsync(embed: Error("Wycena nie jest zainicjalizowana (sprawdź logi oraz env: MONGO_URL / MONGO_DB)."), ephemeral: true);
+                return;
+            }
+
+            // jeśli jest w bazie -> licz
+            var existing = await Bot.VehicleStore.GetVehicleAsync(vuid);
+            if (existing != null)
+            {
+                // jeśli są limitowane/unikatowe kolory bez ceny -> ustaw pending na ceny
+                var missingSpecial = await GetMissingSpecialColorsAsync(existing);
+
+                if (missingSpecial.Count > 0)
+                {
+                    Bot.PendingWycena[Context.User.Id] = new PendingWycenaState
+                    {
+                        Kind = PendingKind.WaitingForSpecialColorPrices,
+                        Vuid = vuid,
+                        UserId = Context.User.Id,
+                        ChannelId = Context.Channel.Id,
+                        ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10),
+                        MissingSpecialColors = missingSpecial
+                    };
+
+                    await RespondAsync(
+                        "🧾 Brakuje cen dla limitowanych/unikatowych kolorów.\n" +
+                        "Podaj je jako **zwykłą wiadomość** na tym kanale, np.:\n" +
+                        "`licznik=35000`\n" +
+                        "`swiatla=55000`\n" +
+                        "(możesz podać 1–2 linie)",
+                        ephemeral: true
+                    );
+                    return;
+                }
+
+                var result = await Bot.ValuationService.EvaluateAsync(existing);
+                await RespondAsync(embed: result.BuildEmbed(vuid, existing));
+                return;
+            }
+
+            // brak w bazie -> poproś o wklejkę
+            Bot.PendingWycena[Context.User.Id] = new PendingWycenaState
+            {
+                Kind = PendingKind.WaitingForVehiclePaste,
+                Vuid = vuid,
+                UserId = Context.User.Id,
+                ChannelId = Context.Channel.Id,
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(10)
+            };
+
+            await RespondAsync(
+                $"📋 Nie mam VUID **{vuid}** w bazie.\n" +
+                $"Wklej teraz pełną kartę pojazdu (z **VUID / Model / Silnik / Tuning wizualny / Tuning mechaniczny / Kolor świateł / Kolor licznika**) jako zwykłą wiadomość na tym kanale.\n" +
+                $"Masz **10 minut**.",
+                ephemeral: true
+            );
+        }
+
+        private static async Task<List<(SpecialColorType type, string name, string rarity)>> GetMissingSpecialColorsAsync(VehicleCard card)
+        {
+            var list = new List<(SpecialColorType type, string name, string rarity)>();
+
+            // lights
+            var (lName, lRarity) = VehicleCardParser.ParseColorWithRarity(card.LightsColorRaw);
+            if (!string.IsNullOrWhiteSpace(lName) &&
+                (lRarity.Equals("Limitowane", StringComparison.OrdinalIgnoreCase) || lRarity.Equals("Unikatowe", StringComparison.OrdinalIgnoreCase)))
+            {
+                var p = await Bot.VehicleStore.GetSpecialColorPriceAsync(SpecialColorType.Lights, lName, lRarity);
+                if (!p.HasValue) list.Add((SpecialColorType.Lights, lName, lRarity));
+            }
+
+            // dashboard
+            var (dName, dRarity) = VehicleCardParser.ParseColorWithRarity(card.DashboardColorRaw);
+            if (!string.IsNullOrWhiteSpace(dName) &&
+                (dRarity.Equals("Limitowane", StringComparison.OrdinalIgnoreCase) || dRarity.Equals("Unikatowe", StringComparison.OrdinalIgnoreCase)))
+            {
+                var p = await Bot.VehicleStore.GetSpecialColorPriceAsync(SpecialColorType.Dashboard, dName, dRarity);
+                if (!p.HasValue) list.Add((SpecialColorType.Dashboard, dName, dRarity));
+            }
+
+            return list
+                .GroupBy(x => (x.type, TextNorm.NormalizeKey(x.name), TextNorm.NormalizeKey(x.rarity)))
+                .Select(g => g.First())
+                .ToList();
         }
 
         // =========================================================
