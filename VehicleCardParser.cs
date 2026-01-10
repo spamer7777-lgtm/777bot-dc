@@ -23,11 +23,13 @@ namespace _777bot
         private static readonly Regex MechRe = new Regex(@"^\s*Tuning\s+mechaniczny\s*(?:\r?\n|\s)+(?<val>.+?)\s*$",
             RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-        private static readonly Regex LightsColorRe = new Regex(@"^\s*Kolor\s+świateł\s*(?:\r?\n|\s)+(?<val>.+?)\s*$",
-            RegexOptions.Multiline | RegexOptions.IgnoreCase);
+private static readonly Regex LightsColorRe = new Regex(
+    @"^\s*Kolor\s+świateł[ \t]+(?<val>.+?)\s*$",
+    RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
-        private static readonly Regex DashColorRe = new Regex(@"^\s*Kolor\s+licznika\s*(?:\r?\n|\s)+(?<val>.+?)\s*$",
-            RegexOptions.Multiline | RegexOptions.IgnoreCase);
+private static readonly Regex DashColorRe = new Regex(
+    @"^\s*Kolor\s+licznika[ \t]+(?<val>.+?)\s*$",
+    RegexOptions.Multiline | RegexOptions.IgnoreCase);
 
         private static readonly Regex ModelIdRe = new Regex(@"\((?<id>\d+)\)\s*$", RegexOptions.Compiled);
         private static readonly Regex AeroRe = new Regex(@"\bAero\s+(I|II|III|IV)\b", RegexOptions.IgnoreCase | RegexOptions.Compiled);
