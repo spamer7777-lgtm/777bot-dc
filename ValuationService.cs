@@ -128,40 +128,47 @@ namespace _777bot
             return res;
         }
 
-        private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
-        {
-            var vehicleName = card.ModelRaw;
-            var idx = vehicleName.LastIndexOf('(');
-            if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
+private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
+{
+    var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
 
-            var vehicleKey = TextNorm.NormalizeKey(vehicleName);
-            var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
+    // 1️⃣ próbuj po pełnej nazwie (rzadkie przypadki)
+    var fullName = card.ModelRaw;
+    var idx = fullName.LastIndexOf('(');
+    if (idx > 0) fullName = fullName.Substring(0, idx).Trim();
 
-            var matches = _cat.Salon
-                .Where(r =>
-                    TextNorm.NormalizeKey(r.Vehicle) == vehicleKey &&
-                    TextNorm.NormalizeKey(r.Engine) == engineKey)
-                .Select(r => r.Price)
-                .ToList();
+    var fullKey = TextNorm.NormalizeKey(fullName);
 
-            if (matches.Count == 0)
-            {
-                matches = _cat.Salon
-                    .Where(r =>
-                        TextNorm.NormalizeKey(r.Model) == TextNorm.NormalizeKey(card.BaseModel) &&
-                        TextNorm.NormalizeKey(r.Engine) == engineKey)
-                    .Select(r => r.Price)
-                    .ToList();
-            }
+    var matches = _cat.Salon
+        .Where(r =>
+            TextNorm.NormalizeKey(r.Vehicle) == fullKey &&
+            TextNorm.NormalizeKey(r.Engine) == engineKey)
+        .Select(r => r.Price)
+        .ToList();
 
-            if (matches.Count == 0)
-            {
-                res.MissingPrices.Add($"Salon: brak w salon_prices.csv dla '{vehicleName}' + '{card.EngineRaw}'");
-                return 0;
-            }
+    // 2️⃣ JEŚLI BRAK → PO BASEMODEL (TO JEST STANDARD)
+    if (matches.Count == 0)
+    {
+        var baseKey = TextNorm.NormalizeKey(card.BaseModel);
 
-            return (long)Math.Round(matches.Average());
-        }
+        matches = _cat.Salon
+            .Where(r =>
+                TextNorm.NormalizeKey(r.Vehicle) == baseKey &&
+                TextNorm.NormalizeKey(r.Engine) == engineKey)
+            .Select(r => r.Price)
+            .ToList();
+    }
+
+    if (matches.Count == 0)
+    {
+        res.MissingPrices.Add(
+            $"Salon: brak w salon_prices.csv dla '{card.BaseModel}' + '{card.EngineRaw}'"
+        );
+        return 0;
+    }
+
+    return (long)Math.Round(matches.Average());
+}
 
         private (long basePrice, long marketPrice) ComputeEngineUpgrade(VehicleCard card, ValuationResult res)
         {
