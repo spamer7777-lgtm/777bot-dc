@@ -95,7 +95,6 @@ namespace _777bot
             ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
             ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
 
-            // alias -> klucz w mech_prices.csv
             ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
             ["modul zmiany napedu"] = "zmiana_napedu:mzn",
             ["mzn"] = "zmiana_napedu:mzn",
@@ -201,6 +200,8 @@ namespace _777bot
 
             return min;
         }
+
+        // ======= ENGINE UPGRADE (bez zmian) =======
 
         private List<string> GetEngineModelCandidates(VehicleCard card)
         {
@@ -467,13 +468,13 @@ namespace _777bot
             res.VisualItems.Add((n, basePrice, market));
         }
 
-        // ======= KLUCZ: solidne wykrywanie "Przeniesienie/Zmiana napędu (AWD/FWD/RWD)" =======
+        // ======= DRIVE / MZN FIX =======
+
         private static bool TryParseDriveChange(string s, out string mode)
         {
             mode = null;
             if (string.IsNullOrWhiteSpace(s)) return false;
 
-            // próbujemy na kilku wariantach tekstu (bo Normalize/Key mogą zmieniać znaki)
             var variants = new[]
             {
                 s,
@@ -491,7 +492,7 @@ namespace _777bot
 
                 if (m.Success)
                 {
-                    mode = m.Groups[2].Value.ToLowerInvariant(); // awd/fwd/rwd
+                    mode = m.Groups[2].Value.ToLowerInvariant();
                     return true;
                 }
             }
@@ -499,6 +500,7 @@ namespace _777bot
             return false;
         }
 
+        // ✅ poprawione: łapie też "_" ":" i różne formaty
         private static bool IsMznItem(string s)
         {
             if (string.IsNullOrWhiteSpace(s)) return false;
@@ -507,16 +509,27 @@ namespace _777bot
             {
                 s,
                 TextNorm.Normalize(s),
+                TextNorm.NormalizeKey(s),
                 ToAsciiPl(TextNorm.Normalize(s)),
+                ToAsciiPl(TextNorm.NormalizeKey(s)),
                 ToAsciiPl(s)
             };
 
             foreach (var v in variants)
             {
-                if (System.Text.RegularExpressions.Regex.IsMatch(
-                        v,
-                        @"^\s*(modul|moduł)\s+zmiany\s+napedu\s*$|^\s*mzn\s*$",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                var vv = v.Trim().ToLowerInvariant();
+
+                // np. "zmiana_napedu:mzn"
+                if (vv.Contains("zmiana_napedu:mzn")) return true;
+
+                // np. "modul_zmiany_napedu"
+                if (vv.Contains("modul_zmiany_napedu")) return true;
+
+                // np. "modul zmiany napedu"
+                if (vv.Contains("modul zmiany napedu")) return true;
+
+                // token mzn (żeby nie łapać np. "amzn" itp.)
+                if (System.Text.RegularExpressions.Regex.IsMatch(vv, @"(^|[^a-z0-9])mzn([^a-z0-9]|$)"))
                     return true;
             }
 
@@ -525,16 +538,13 @@ namespace _777bot
 
         private void ComputeMechanical(VehicleCard card, ValuationResult res)
         {
-            // jeśli jest drive-change, nie pokazuj MZN
             bool hasDriveChange = card.MechanicalTuningRaw.Any(r => TryParseDriveChange(r, out _));
 
             foreach (var raw in card.MechanicalTuningRaw)
             {
                 var name = TextNorm.Normalize(raw);
 
-                // ======================
-                // Opony (...) -> wizualne
-                // ======================
+                // Opony (...) jako wizualne
                 var tires = System.Text.RegularExpressions.Regex.Match(
                     name,
                     @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
@@ -564,9 +574,7 @@ namespace _777bot
                     continue;
                 }
 
-                // ======================
                 // Drive change -> mech key "naped:awd/fwd/rwd"
-                // ======================
                 if (TryParseDriveChange(raw, out var mode) || TryParseDriveChange(name, out mode))
                 {
                     var keyDrive = $"naped:{mode}";
@@ -584,15 +592,10 @@ namespace _777bot
                     continue;
                 }
 
-                // ======================
-                // jeśli jest drive-change, ukryj MZN
-                // ======================
+                // ✅ jeśli jest drive-change, ukryj MZN (niezależnie od formatu stringa)
                 if (hasDriveChange && IsMznItem(raw))
                     continue;
 
-                // ======================
-                // Standard mechaniczne
-                // ======================
                 var key = TextNorm.NormalizeKey(name);
                 key = ToAsciiPl(key);
 
@@ -610,10 +613,6 @@ namespace _777bot
                     @"butla\s+lpg\s*\(\s*(\d{2,3})l\s*\)");
                 if (lpg.Success)
                     key = $"lpg:{lpg.Groups[1].Value}l";
-
-                // MZN (jeśli naprawdę wpisany jako item i NIE ma drive-change)
-                if (key.Contains("modul_zmiany_napedu") || key.Contains("modul zmiany napedu") || key == "mzn")
-                    key = "mzn";
 
                 if (key == "aplikacja transportowa" || key == "aplikacja_transportowa")
                     key = "aplikacja_transportowa";
@@ -753,7 +752,7 @@ namespace _777bot
 
         private static string ToAsciiPl(string s)
         {
-            return s
+            return (s ?? "")
                 .Replace("ą", "a").Replace("ć", "c").Replace("ę", "e")
                 .Replace("ł", "l").Replace("ń", "n").Replace("ó", "o")
                 .Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
