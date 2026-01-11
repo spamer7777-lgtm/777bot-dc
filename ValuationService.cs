@@ -95,8 +95,7 @@ namespace _777bot
             ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
             ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
 
-            // UWAGA: to jest tylko alias nazwy -> klucz w mech_prices.csv
-            // Samo liczenie AWD/FWD/RWD robimy osobno w ComputeMechanical (na stringu "name")
+            // alias -> klucz w mech_prices.csv
             ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
             ["modul zmiany napedu"] = "zmiana_napedu:mzn",
             ["mzn"] = "zmiana_napedu:mzn",
@@ -203,7 +202,6 @@ namespace _777bot
             return min;
         }
 
-        // ✅ NOWE: lista kandydatów modelu pod engine_upgrades (żeby warianty typu "Infernus Pandem" łapały "Infernus")
         private List<string> GetEngineModelCandidates(VehicleCard card)
         {
             var list = new List<string>();
@@ -340,8 +338,7 @@ namespace _777bot
         {
             if (!string.IsNullOrWhiteSpace(card.BodykitMainName))
             {
-                BodykitRow bk;
-                if (_cat.TryGetBodykit(card.BaseModel, card.BodykitMainName, out bk))
+                if (_cat.TryGetBodykit(card.BaseModel, card.BodykitMainName, out var bk))
                 {
                     var mult = bk.Level >= 40 ? 1.0 : 0.5;
                     res.Bodykits.Add(($"{card.BaseModel} {bk.Name}", bk.Price, (long)Math.Round(bk.Price * mult), bk.Level >= 40 ? "(100%)" : "(50%)"));
@@ -350,8 +347,7 @@ namespace _777bot
 
             if (!string.IsNullOrWhiteSpace(card.BodykitAeroName))
             {
-                BodykitRow bk;
-                if (_cat.TryGetBodykit("Spoiler", card.BodykitAeroName, out bk))
+                if (_cat.TryGetBodykit("Spoiler", card.BodykitAeroName, out var bk))
                 {
                     var mult = bk.Level >= 40 ? 1.0 : 0.5;
                     res.Bodykits.Add(($"Spoiler {bk.Name}", bk.Price, (long)Math.Round(bk.Price * mult), bk.Level >= 40 ? "(100%)" : "(50%)"));
@@ -371,8 +367,7 @@ namespace _777bot
             {
                 if (v.Id != 0)
                 {
-                    long idPrice;
-                    if (_cat.VisualById.TryGetValue(v.Id, out idPrice))
+                    if (_cat.VisualById.TryGetValue(v.Id, out var idPrice))
                         res.VisualItems.Add(($"{v.Name} ({v.Id})", idPrice, (long)Math.Round(idPrice * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
@@ -472,17 +467,66 @@ namespace _777bot
             res.VisualItems.Add((n, basePrice, market));
         }
 
+        // ======= KLUCZ: solidne wykrywanie "Przeniesienie/Zmiana napędu (AWD/FWD/RWD)" =======
+        private static bool TryParseDriveChange(string s, out string mode)
+        {
+            mode = null;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+
+            // próbujemy na kilku wariantach tekstu (bo Normalize/Key mogą zmieniać znaki)
+            var variants = new[]
+            {
+                s,
+                TextNorm.Normalize(s),
+                ToAsciiPl(TextNorm.Normalize(s)),
+                ToAsciiPl(s)
+            };
+
+            foreach (var v in variants)
+            {
+                var m = System.Text.RegularExpressions.Regex.Match(
+                    v,
+                    @"\b(zmiana|przeniesienie)\s+napedu\s*\(\s*(awd|fwd|rwd)\s*\)\b",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (m.Success)
+                {
+                    mode = m.Groups[2].Value.ToLowerInvariant(); // awd/fwd/rwd
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsMznItem(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return false;
+
+            var variants = new[]
+            {
+                s,
+                TextNorm.Normalize(s),
+                ToAsciiPl(TextNorm.Normalize(s)),
+                ToAsciiPl(s)
+            };
+
+            foreach (var v in variants)
+            {
+                if (System.Text.RegularExpressions.Regex.IsMatch(
+                        v,
+                        @"^\s*(modul|moduł)\s+zmiany\s+napedu\s*$|^\s*mzn\s*$",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         private void ComputeMechanical(VehicleCard card, ValuationResult res)
         {
-            // Jeśli w aucie jest przeniesienie/zmiana napędu (AWD/FWD/RWD),
-            // to NIE licz dodatkowo "MZN/Moduł zmiany napędu" jako osobnej pozycji.
-            bool hasDriveChange = card.MechanicalTuningRaw.Any(r =>
-                System.Text.RegularExpressions.Regex.IsMatch(
-                    TextNorm.Normalize(r),
-                    @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
-                )
-            );
+            // jeśli jest drive-change, nie pokazuj MZN
+            bool hasDriveChange = card.MechanicalTuningRaw.Any(r => TryParseDriveChange(r, out _));
 
             foreach (var raw in card.MechanicalTuningRaw)
             {
@@ -520,46 +564,31 @@ namespace _777bot
                     continue;
                 }
 
-                // ==========================================
-                // Przeniesienie/Zmiana napędu (AWD/FWD/RWD)
-                // - wykrywamy po "name" (z polskimi znakami)
-                // ==========================================
-                var driveRaw = System.Text.RegularExpressions.Regex.Match(
-                    name,
-                    @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-                if (driveRaw.Success)
+                // ======================
+                // Drive change -> mech key "naped:awd/fwd/rwd"
+                // ======================
+                if (TryParseDriveChange(raw, out var mode) || TryParseDriveChange(name, out mode))
                 {
-                    var mode = driveRaw.Groups[2].Value.ToLowerInvariant(); // awd/fwd/rwd
                     var keyDrive = $"naped:{mode}";
 
                     if (_cat.MechByKey.TryGetValue(keyDrive, out var baseDrive))
                     {
                         var marketDrive = (long)Math.Round(baseDrive * 0.5);
-                        res.MechItems.Add((name, baseDrive, marketDrive, " (50%)"));
+                        res.MechItems.Add((TextNorm.Normalize(raw), baseDrive, marketDrive, " (50%)"));
                     }
                     else
                     {
-                        res.MissingPrices.Add($"Mechaniczne: brak ceny dla '{name}' (klucz '{keyDrive}')");
+                        res.MissingPrices.Add($"Mechaniczne: brak ceny dla '{TextNorm.Normalize(raw)}' (klucz '{keyDrive}')");
                     }
 
                     continue;
                 }
 
-                // ==========================================
-                // Jeśli jest drive-change, ignoruj MZN/moduł
-                // ==========================================
-                if (hasDriveChange)
-                {
-                    var isMznLabel = System.Text.RegularExpressions.Regex.IsMatch(
-                        name,
-                        @"^Moduł\s+zmiany\s+nap[eę]du\s*$|^\s*MZN\s*$",
-                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-                    if (isMznLabel)
-                        continue;
-                }
+                // ======================
+                // jeśli jest drive-change, ukryj MZN
+                // ======================
+                if (hasDriveChange && IsMznItem(raw))
+                    continue;
 
                 // ======================
                 // Standard mechaniczne
@@ -582,7 +611,7 @@ namespace _777bot
                 if (lpg.Success)
                     key = $"lpg:{lpg.Groups[1].Value}l";
 
-                // MZN (jeśli naprawdę występuje jako item i NIE ma drive-change)
+                // MZN (jeśli naprawdę wpisany jako item i NIE ma drive-change)
                 if (key.Contains("modul_zmiany_napedu") || key.Contains("modul zmiany napedu") || key == "mzn")
                     key = "mzn";
 
