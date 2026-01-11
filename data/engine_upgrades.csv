@@ -179,6 +179,12 @@ Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.2,3.5,26000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.5,3.8,30000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.8,4.1,34000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,4.1,4.4,36000
+
+Infernus Pandem,3.2,3.5,26000
+Infernus Pandem,3.5,3.8,30000
+Infernus Pandem,3.8,4.1,34000
+Infernus Pandem,4.1,4.4,36000
+
 Intruder,1.5,1.6,8000
 Intruder,1.6,1.7,8000
 Intruder,1.7,1.8,10000
