@@ -3,49 +3,45 @@ ecu:v1,10500
 ecu:v2,18000
 ecu:v3,30000
 ecu:v4,40000
+
 turbo:v1,15000
 turbo:v2,25000
 turbo:v3,40000
 turbo:v4,50000
 turbo:v5,60000
+
 lpg:25l,20000
 lpg:50l,25000
 lpg:75l,35000
+
 zestaw:uliczny,50000
-zestaw:wyścigowy,100000
+zestaw:wyscigowy,100000
 zestaw:drifterski,150000
 zestaw:torowy,250000
+
 c.f.i:v1,125000
 c.f.i:v2,150000
 c.f.i:v3,175000
 c.f.i:v4,225000
 c.f.i:v5,250000
+
 zmiana_napedu:rwd,30000
 zmiana_napedu:awd,50000
 zmiana_napedu:fwd,20000
 zmiana_napedu:mzn,75000
+
 bak_paliwa:100l,45000
 bak_paliwa:125l,55000
 bak_paliwa:150l,65000
+
 radio,500
 cb-radio,1500
 ogranicznik,2000
-ogranicznik_prędkości,2000
-wykrywacz_fotoradarów,2500
-system abs,15000
-gwintowane zawieszenie,32500
-gwint. zawieszenie,32500
+wykrywacz_fotoradarow,2500
+system_abs,15000
+gwintowane_zawieszenie,32500
 hydraulika,45000
-zestaw:(u),50000
-zestaw:(t),250000
-zestaw:(w),100000
-zestaw:(d),150000
-Gwint. zawieszenie,32500
-Gwintowane zawieszenie,32500
-Moduł zmiany napędu,75000
-Powiększony bak:150l,75000
 aplikacja_transportowa,15000
-
 
 
 
