@@ -212,7 +212,7 @@ namespace _777bot
             return min;
         }
 
-        // ✅ SILNIK: delta od bazowego dm³ (z salonu) do aktualnego dm³
+        // ✅ SILNIK: SUMA kroków od bazowego dm³ (z salonu) do aktualnego dm³ (z karty)
         private (long basePrice, long marketPrice) ComputeEngineUpgrade(VehicleCard card, ValuationResult res, double? baseSalonDm3)
         {
             if (!VehicleCardParser.TryParseEngineDisplacementDm3(card.EngineRaw, out var currentDm3))
@@ -221,7 +221,7 @@ namespace _777bot
                 return (0, 0);
             }
 
-            // Jeśli nie znamy bazowego dm³ z salonu → wróć do starego zachowania (po aktualnym dm³)
+            // brak bazowego dm³ -> fallback (stare zachowanie)
             if (!baseSalonDm3.HasValue)
             {
                 var single = GetEngineUpgradePriceForDm3(card, res, currentDm3);
@@ -233,16 +233,72 @@ namespace _777bot
             if (currentDm3 <= baseDm3 + 0.0001)
                 return (0, 0);
 
-            var priceBase = GetEngineUpgradePriceForDm3(card, res, baseDm3);
-            var priceCurrent = GetEngineUpgradePriceForDm3(card, res, currentDm3);
+            // pobierz kroki dla modelu
+            var bm = TextNorm.NormalizeKey(card.BaseModel);
 
-            var delta = priceCurrent - priceBase;
-            if (delta < 0) delta = 0;
+            var steps = _cat.EngineUpgrades
+                .Where(r =>
+                {
+                    var keys = r.ModelKeys.Split(',')
+                        .Select(k => TextNorm.NormalizeKey(k))
+                        .ToList();
+                    return keys.Contains(bm);
+                })
+                .OrderBy(r => r.From)
+                .ThenBy(r => r.To)
+                .ToList();
 
-            var market = (long)Math.Round(delta * 0.5);
-            return (delta, market);
+            if (steps.Count == 0)
+            {
+                res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}'");
+                return (0, 0);
+            }
+
+            // SUMA kroków base -> current
+            var sum = SumEngineUpgradeSteps(steps, baseDm3, currentDm3, card, res);
+
+            return (sum, (long)Math.Round(sum * 0.5));
         }
 
+        // ✅ kluczowa logika: sumowanie kroków (2.9->3.1 + 3.1->3.3 + ...)
+        private long SumEngineUpgradeSteps(List<EngineUpgradeRow> steps, double baseDm3, double targetDm3, VehicleCard card, ValuationResult res)
+        {
+            long sum = 0;
+
+            // wybieramy kroki, które mieszczą się w zakresie [base, target]
+            var selected = steps
+                .Where(s => s.From >= baseDm3 - 0.0001 && s.To <= targetDm3 + 0.0001)
+                .OrderBy(s => s.From)
+                .ThenBy(s => s.To)
+                .ToList();
+
+            if (selected.Count == 0)
+            {
+                // awaryjnie spróbuj stary tryb, żeby coś policzyło
+                res.MissingPrices.Add($"Silnik: brak kroków upgrade w engine_upgrades.csv dla '{card.BaseModel}' od {baseDm3:0.##} do {targetDm3:0.##} dm³");
+                return 0;
+            }
+
+            // kontrola "łańcucha"
+            double cur = baseDm3;
+
+            foreach (var s in selected)
+            {
+                // jeśli jest dziura, daj info (nie przerywamy, dalej sumujemy)
+                if (s.From > cur + 0.0002)
+                    res.MissingPrices.Add($"Silnik: dziura w krokach upgrade dla '{card.BaseModel}' (oczekiwane od {cur:0.##}, a jest od {s.From:0.##})");
+
+                sum += s.Price;
+                cur = s.To;
+            }
+
+            if (cur < targetDm3 - 0.0002)
+                res.MissingPrices.Add($"Silnik: kroki upgrade nie dochodzą do {targetDm3:0.##} dm³ (doszły do {cur:0.##}) dla '{card.BaseModel}'");
+
+            return sum;
+        }
+
+        // fallback / stary tryb: pojedynczy przedział (zostawione)
         private long GetEngineUpgradePriceForDm3(VehicleCard card, ValuationResult res, double dm3)
         {
             var bm = TextNorm.NormalizeKey(card.BaseModel);
