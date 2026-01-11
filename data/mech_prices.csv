@@ -20,13 +20,13 @@ c.f.i:v2,150000
 c.f.i:v3,175000
 c.f.i:v4,225000
 c.f.i:v5,250000
-zmiana napędu:rwd,30000
-zmiana napędu:awd,50000
-zmiana napędu:fwd,20000
-zmiana napędu:mzn,75000
-bak paliwa:100l,45000
-bak paliwa:125l,55000
-bak paliwa:150l,65000
+zmiana_napedu:rwd,30000
+zmiana_napedu:awd,50000
+zmiana_napedu:fwd,20000
+zmiana_napedu:mzn,75000
+bak_paliwa:100l,45000
+bak_paliwa:125l,55000
+bak_paliwa:150l,65000
 radio,500
 cb-radio,1500
 ogranicznik,2000
@@ -45,5 +45,6 @@ Gwint. zawieszenie,32500
 Gwintowane zawieszenie,32500
 Moduł zmiany napędu,75000
 Powiększony bak:150l,75000
+
 
 
