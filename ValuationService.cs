@@ -13,6 +13,9 @@ namespace _777bot
         public long EngineUpgradePrice { get; set; }
         public long EngineUpgradeMarket { get; set; }
 
+        // ✅ bazowe dm³ z salonu (ustawiane podczas ComputeSalonAvg)
+        public double? BaseSalonDm3 { get; set; }
+
         public List<(string name, long basePrice, long marketPrice, string note)> Bodykits { get; set; }
             = new List<(string name, long basePrice, long marketPrice, string note)>();
 
@@ -87,25 +90,27 @@ namespace _777bot
 
         private static readonly Dictionary<string, string> MechAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-    // ogranicznik
-    ["ogranicznik prędkości"] = "ogranicznik",
-    ["ogranicznik predkosci"] = "ogranicznik",
+            // ogranicznik
+            ["ogranicznik prędkości"] = "ogranicznik",
+            ["ogranicznik predkosci"] = "ogranicznik",
 
-    // wykrywacz
-    ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
-    ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
+            // wykrywacz
+            ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
+            ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
 
-    // MZN
-    ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
-    ["modul zmiany napedu"] = "zmiana_napedu:mzn",
-    ["mzn"] = "zmiana_napedu:mzn",
-    // ===== SYSTEM ABS =====
-    ["system abs"] = "system_abs",
-    ["abs"] = "system_abs",
-    // ===== GWINT =====
-    ["gwint. zawieszenie"] = "gwintowane_zawieszenie",
-    ["gwint zawieszenie"] = "gwintowane_zawieszenie",
-    ["gwintowane zawieszenie"] = "gwintowane_zawieszenie",      
+            // MZN
+            ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
+            ["modul zmiany napedu"] = "zmiana_napedu:mzn",
+            ["mzn"] = "zmiana_napedu:mzn",
+
+            // SYSTEM ABS
+            ["system abs"] = "system_abs",
+            ["abs"] = "system_abs",
+
+            // GWINT
+            ["gwint. zawieszenie"] = "gwintowane_zawieszenie",
+            ["gwint zawieszenie"] = "gwintowane_zawieszenie",
+            ["gwintowane zawieszenie"] = "gwintowane_zawieszenie",
         };
 
         public ValuationService(PriceCatalog cat, VehicleMongoStore store)
@@ -118,8 +123,10 @@ namespace _777bot
         {
             var res = new ValuationResult();
 
-            res.SalonAvg = ComputeSalonAvg(card, res);
-            (res.EngineUpgradePrice, res.EngineUpgradeMarket) = ComputeEngineUpgrade(card, res);
+            res.SalonAvg = ComputeSalonAvg(card, res, out var baseSalonDm3);
+            res.BaseSalonDm3 = baseSalonDm3;
+
+            (res.EngineUpgradePrice, res.EngineUpgradeMarket) = ComputeEngineUpgrade(card, res, baseSalonDm3);
 
             await ComputeBodykitsAsync(card, res);
             await ComputeVisualAsync(card, res);
@@ -128,57 +135,116 @@ namespace _777bot
             return res;
         }
 
-private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
-{
-    var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
-
-    // 1️⃣ próbuj po pełnej nazwie (rzadkie przypadki)
-    var fullName = card.ModelRaw;
-    var idx = fullName.LastIndexOf('(');
-    if (idx > 0) fullName = fullName.Substring(0, idx).Trim();
-
-    var fullKey = TextNorm.NormalizeKey(fullName);
-
-    var matches = _cat.Salon
-        .Where(r =>
-            TextNorm.NormalizeKey(r.Vehicle) == fullKey &&
-            TextNorm.NormalizeKey(r.Engine) == engineKey)
-        .Select(r => r.Price)
-        .ToList();
-
-    // 2️⃣ JEŚLI BRAK → PO BASEMODEL (TO JEST STANDARD)
-    if (matches.Count == 0)
-    {
-        var baseKey = TextNorm.NormalizeKey(card.BaseModel);
-
-        matches = _cat.Salon
-            .Where(r =>
-                TextNorm.NormalizeKey(r.Vehicle) == baseKey &&
-                TextNorm.NormalizeKey(r.Engine) == engineKey)
-            .Select(r => r.Price)
-            .ToList();
-    }
-
-    if (matches.Count == 0)
-    {
-        res.MissingPrices.Add(
-            $"Salon: brak w salon_prices.csv dla '{card.BaseModel}' + '{card.EngineRaw}'"
-        );
-        return 0;
-    }
-
-    return (long)Math.Round(matches.Average());
-}
-
-        private (long basePrice, long marketPrice) ComputeEngineUpgrade(VehicleCard card, ValuationResult res)
+        // ✅ SALON: najpierw próba auto+silnik, potem fallback po samej nazwie auta (ignoruje silnik)
+        private long ComputeSalonAvg(VehicleCard card, ValuationResult res, out double? baseSalonDm3)
         {
-            double dm3;
-            if (!VehicleCardParser.TryParseEngineDisplacementDm3(card.EngineRaw, out dm3))
+            baseSalonDm3 = null;
+
+            // Nazwa auta z karty bez "(...)"
+            var vehicleName = card.ModelRaw;
+            var idx = vehicleName.LastIndexOf('(');
+            if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
+
+            var vehicleKey = TextNorm.NormalizeKey(vehicleName);
+            var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
+
+            // 1) dokładnie: auto + silnik
+            var strict = _cat.Salon
+                .Where(r =>
+                    TextNorm.NormalizeKey(r.Vehicle) == vehicleKey &&
+                    TextNorm.NormalizeKey(r.Engine) == engineKey)
+                .ToList();
+
+            if (strict.Count > 0)
+            {
+                baseSalonDm3 = ExtractMinDm3(strict.Select(x => x.Engine));
+                return (long)Math.Round(strict.Select(x => x.Price).Average());
+            }
+
+            // 2) fallback: po samej nazwie auta (ignoruj silnik)
+            var byVehicle = _cat.Salon
+                .Where(r => TextNorm.NormalizeKey(r.Vehicle) == vehicleKey)
+                .ToList();
+
+            // 3) jeszcze fallback: po BaseModel (jakby karta miała inne "ModelRaw")
+            if (byVehicle.Count == 0)
+            {
+                var bmKey = TextNorm.NormalizeKey(card.BaseModel);
+                byVehicle = _cat.Salon
+                    .Where(r => TextNorm.NormalizeKey(r.Vehicle) == bmKey)
+                    .ToList();
+            }
+
+            if (byVehicle.Count == 0)
+            {
+                res.MissingPrices.Add($"Salon: brak w salon_prices.csv dla '{vehicleName}' (szukam po nazwie auta)");
+                return 0;
+            }
+
+            baseSalonDm3 = ExtractMinDm3(byVehicle.Select(x => x.Engine));
+            return (long)Math.Round(byVehicle.Select(x => x.Price).Average());
+        }
+
+        private double? ExtractMinDm3(IEnumerable<string> engines)
+        {
+            double? min = null;
+
+            foreach (var e in engines)
+            {
+                if (string.IsNullOrWhiteSpace(e)) continue;
+
+                if (VehicleCardParser.TryParseEngineDisplacementDm3(e, out var dm3))
+                {
+                    if (!min.HasValue || dm3 < min.Value) min = dm3;
+                    continue;
+                }
+
+                if (double.TryParse(
+                    e.Replace(',', '.'),
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out var dm3plain))
+                {
+                    if (!min.HasValue || dm3plain < min.Value) min = dm3plain;
+                }
+            }
+
+            return min;
+        }
+
+        // ✅ SILNIK: delta od bazowego dm³ (z salonu) do aktualnego dm³
+        private (long basePrice, long marketPrice) ComputeEngineUpgrade(VehicleCard card, ValuationResult res, double? baseSalonDm3)
+        {
+            if (!VehicleCardParser.TryParseEngineDisplacementDm3(card.EngineRaw, out var currentDm3))
             {
                 res.MissingPrices.Add($"Silnik: nie umiem odczytać dm³ z '{card.EngineRaw}'");
                 return (0, 0);
             }
 
+            // Jeśli nie znamy bazowego dm³ z salonu → wróć do starego zachowania (po aktualnym dm³)
+            if (!baseSalonDm3.HasValue)
+            {
+                var single = GetEngineUpgradePriceForDm3(card, res, currentDm3);
+                return (single, (long)Math.Round(single * 0.5));
+            }
+
+            var baseDm3 = baseSalonDm3.Value;
+
+            if (currentDm3 <= baseDm3 + 0.0001)
+                return (0, 0);
+
+            var priceBase = GetEngineUpgradePriceForDm3(card, res, baseDm3);
+            var priceCurrent = GetEngineUpgradePriceForDm3(card, res, currentDm3);
+
+            var delta = priceCurrent - priceBase;
+            if (delta < 0) delta = 0;
+
+            var market = (long)Math.Round(delta * 0.5);
+            return (delta, market);
+        }
+
+        private long GetEngineUpgradePriceForDm3(VehicleCard card, ValuationResult res, double dm3)
+        {
             var bm = TextNorm.NormalizeKey(card.BaseModel);
 
             var candidates = _cat.EngineUpgrades.Where(r =>
@@ -192,19 +258,17 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
             if (candidates.Count == 0)
             {
                 res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}'");
-                return (0, 0);
+                return 0;
             }
 
             var match = candidates.FirstOrDefault(r => dm3 >= r.From && dm3 <= r.To);
             if (match == null)
             {
                 res.MissingPrices.Add($"Silnik: brak przedziału dla {dm3:0.##}dm³ w '{card.BaseModel}'");
-                return (0, 0);
+                return 0;
             }
 
-            var basePrice = match.Price;
-            var marketPrice = (long)Math.Round(basePrice * 0.5);
-            return (basePrice, marketPrice);
+            return match.Price;
         }
 
         private async Task ComputeBodykitsAsync(VehicleCard card, ValuationResult res)
@@ -240,9 +304,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
         {
             foreach (var v in card.VisualTuning)
             {
-                // ======================
-                // 1) WIZUALNE PO ID
-                // ======================
                 if (v.Id != 0)
                 {
                     long idPrice;
@@ -254,9 +315,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
                     continue;
                 }
 
-                // ======================
-                // 2) SPECJALNE: Poszerzenia (2,2) -> przód + tył
-                // ======================
                 var s = TextNorm.Normalize(v.Name);
 
                 var widen = System.Text.RegularExpressions.Regex.Match(
@@ -269,7 +327,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
                     var f = widen.Groups["f"].Value;
                     var r = widen.Groups["r"].Value;
 
-                    // przód
                     var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
                     long priceF;
                     if (_cat.VisualByName.TryGetValue(keyF, out priceF))
@@ -277,7 +334,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
 
-                    // tył
                     var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
                     long priceR;
                     if (_cat.VisualByName.TryGetValue(keyR, out priceR))
@@ -288,9 +344,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
                     continue;
                 }
 
-                // ======================
-                // 3) POZOSTAŁE: nazwa / mapowanie (przyciemnienie, rozmiar felg)
-                // ======================
                 string mappedKey;
                 string key;
 
@@ -359,78 +412,67 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
         }
 
         private void ComputeMechanical(VehicleCard card, ValuationResult res)
-{
-    foreach (var raw in card.MechanicalTuningRaw)
-    {
-        var name = TextNorm.Normalize(raw);
-
-        // normalizacja + ascii (bez polskich znaków)
-        var key = TextNorm.NormalizeKey(name);
-        key = ToAsciiPl(key);
-
-        // aliasy
-        if (MechAliases.TryGetValue(key, out var alias))
-            key = TextNorm.NormalizeKey(alias);
-
-        // ===== SPECJALNE MAPOWANIA =====
-
-        // Powiększony bak (150l)
-        var tank = System.Text.RegularExpressions.Regex.Match(
-            key,
-            @"powiekszony\s+bak\s*\(\s*(\d{2,3})l\s*\)");
-        if (tank.Success)
-            key = $"bak_paliwa:{tank.Groups[1].Value}l";
-
-        // Butla LPG (75l)
-        var lpg = System.Text.RegularExpressions.Regex.Match(
-            key,
-            @"butla\s+lpg\s*\(\s*(\d{2,3})l\s*\)");
-        if (lpg.Success)
-            key = $"lpg:{lpg.Groups[1].Value}l";
-
-        // Przeniesienie napędu (AWD/FWD/RWD)
-        var drive = System.Text.RegularExpressions.Regex.Match(
-            key,
-            @"przeniesienie\s+napedu\s*\(\s*(awd|fwd|rwd)\s*\)");
-        if (drive.Success)
-            key = $"naped:{drive.Groups[1].Value}";
-
-        // Moduł zmiany napędu (MZN)
-        if (key.Contains("modul zmiany napedu"))
-            key = "mzn";
-
-        // Aplikacja transportowa
-        if (key == "aplikacja transportowa")
-            key = "aplikacja_transportowa";
-
-        // ECU / Turbo / LPG / Zestawy / CFI
-        key = NormalizeMechKey(key);
-
-        // ===== CENA =====
-        if (_cat.MechByKey.TryGetValue(key, out var basePrice))
         {
-            var full =
-                key.StartsWith("c.f.i:") ||
-                key.StartsWith("zestaw:");
+            foreach (var raw in card.MechanicalTuningRaw)
+            {
+                var name = TextNorm.Normalize(raw);
 
-            var mult = full ? 1.0 : 0.5;
-            var market = (long)Math.Round(basePrice * mult);
+                var key = TextNorm.NormalizeKey(name);
+                key = ToAsciiPl(key);
 
-            res.MechItems.Add((
-                name,
-                basePrice,
-                market,
-                full ? " (100%)" : " (50%)"
-            ));
+                if (MechAliases.TryGetValue(key, out var alias))
+                    key = TextNorm.NormalizeKey(alias);
+
+                var tank = System.Text.RegularExpressions.Regex.Match(
+                    key,
+                    @"powiekszony\s+bak\s*\(\s*(\d{2,3})l\s*\)");
+                if (tank.Success)
+                    key = $"bak_paliwa:{tank.Groups[1].Value}l";
+
+                var lpg = System.Text.RegularExpressions.Regex.Match(
+                    key,
+                    @"butla\s+lpg\s*\(\s*(\d{2,3})l\s*\)");
+                if (lpg.Success)
+                    key = $"lpg:{lpg.Groups[1].Value}l";
+
+                var drive = System.Text.RegularExpressions.Regex.Match(
+                    key,
+                    @"przeniesienie\s+napedu\s*\(\s*(awd|fwd|rwd)\s*\)");
+                if (drive.Success)
+                    key = $"naped:{drive.Groups[1].Value}";
+
+                if (key.Contains("modul zmiany napedu"))
+                    key = "mzn";
+
+                if (key == "aplikacja transportowa")
+                    key = "aplikacja_transportowa";
+
+                key = NormalizeMechKey(key);
+
+                if (_cat.MechByKey.TryGetValue(key, out var basePrice))
+                {
+                    var full =
+                        key.StartsWith("c.f.i:") ||
+                        key.StartsWith("zestaw:");
+
+                    var mult = full ? 1.0 : 0.5;
+                    var market = (long)Math.Round(basePrice * mult);
+
+                    res.MechItems.Add((
+                        name,
+                        basePrice,
+                        market,
+                        full ? " (100%)" : " (50%)"
+                    ));
+                }
+                else
+                {
+                    res.MissingPrices.Add(
+                        $"Mechaniczne: brak ceny dla '{name}' (klucz '{key}')"
+                    );
+                }
+            }
         }
-        else
-        {
-            res.MissingPrices.Add(
-                $"Mechaniczne: brak ceny dla '{name}' (klucz '{key}')"
-            );
-        }
-    }
-}
 
         private static string NormalizeMechKey(string key)
         {
@@ -475,7 +517,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
             return key;
         }
 
-        // ======= VISUAL SPECIAL PARSING (Przyciemnienie / Rozmiar felg) =======
         private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
         {
             mappedKey = "";
@@ -483,7 +524,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
 
             var s = TextNorm.Normalize(rawName);
 
-            // Przyciemnienie szyb (70%)
             var tint = System.Text.RegularExpressions.Regex.Match(
                 s,
                 @"^Przyciemnienie\s+szyb\s*\(\s*(?<p>\d{1,3})\s*%\s*\)\s*$",
@@ -495,7 +535,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
                 return true;
             }
 
-            // Rozmiar felg (Duże)
             var rimSize = System.Text.RegularExpressions.Regex.Match(
                 s,
                 @"^Rozmiar\s+felg\s*\(\s*(?<v>.+?)\s*\)\s*$",
@@ -505,7 +544,6 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
             {
                 var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
 
-                // spolszczenia -> ascii (na wszelki wypadek)
                 v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
                      .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
 
@@ -537,10 +575,10 @@ private long ComputeSalonAvg(VehicleCard card, ValuationResult res)
 
         private static string ToAsciiPl(string s)
         {
-    return s
-        .Replace("ą","a").Replace("ć","c").Replace("ę","e")
-        .Replace("ł","l").Replace("ń","n").Replace("ó","o")
-        .Replace("ś","s").Replace("ż","z").Replace("ź","z");
+            return s
+                .Replace("ą", "a").Replace("ć", "c").Replace("ę", "e")
+                .Replace("ł", "l").Replace("ń", "n").Replace("ó", "o")
+                .Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
         }
     }
 }
