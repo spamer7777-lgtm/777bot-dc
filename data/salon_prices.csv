@@ -1,268 +1,130 @@
-Vehicle,Engine,Price1,Price2,Price3
-Bobcat,Benzyna (1.8dm³),33000,34000,33500
-Bobcat,Diesel (1.8dm³),33000,34000,33500
-Bobcat,LPG (1.8dm³),33000,34000,33500
-Bravura,Benzyna (1.2dm³),21000,23000,22000
-Bravura,Diesel (1.2dm³),21000,23000,22000
-Bravura,LPG (1.2dm³),21000,23000,22000
-Clover,Benzyna (2.3dm³),17000,19000,18000
-Clover,Diesel (2.3dm³),17000,19000,18000
-Clover,LPG (2.3dm³),17000,19000,18000
-Clover Wagon,Benzyna (2.3dm³),17000,19000,18000
-Clover Wagon,Diesel (2.3dm³),17000,19000,18000
-Clover Wagon,LPG (2.3dm³),17000,19000,18000
-Manana,Benzyna (1.7dm³),5000,6000,5500
-Manana,Diesel (1.7dm³),5000,6000,5500
-Manana,LPG (1.7dm³),5000,6000,5500
-Moonbeam,Benzyna (1.2dm³),6700,7500,7100
-Moonbeam,Diesel (1.2dm³),6700,7500,7100
-Moonbeam,LPG (1.2dm³),6700,7500,7100
-Perennial,Benzyna (1.5dm³),5500,6900,6200
-Perennial,Diesel (1.5dm³),5500,6900,6200
-Perennial,LPG (1.5dm³),5500,6900,6200
-Picador,Benzyna (2.5dm³),15500,16000,15750
-Picador,Diesel (2.5dm³),15500,16000,15750
-Picador,LPG (2.5dm³),15500,16000,15750
-Previon,Benzyna (1.5dm³),9500,10500,10000
-Previon,Diesel (1.5dm³),9500,10500,10000
-Previon,LPG (1.5dm³),9500,10500,10000
-Sadler,Benzyna (2.5dm³),18000,19000,18500
-Sadler,Diesel (2.5dm³),18000,19000,18500
-Sadler,LPG (2.5dm³),18000,19000,18500
-Tampa,Benzyna (2.3dm³),24000,25000,24500
-Tampa,Diesel (2.3dm³),24000,25000,24500
-Tampa,LPG (2.3dm³),24000,25000,24500
-Walton,Benzyna (1.1dm³),3500,4200,3850
-Walton,Diesel (1.1dm³),3500,4200,3850
-Walton,LPG (1.1dm³),3500,4200,3850
-Admiral,Benzyna (2.1dm³),46000,47000,46500
-Admiral,Diesel (2.1dm³),46000,47000,46500
-Admiral,LPG (2.1dm³),46000,47000,46500
-Admiral Kombi,Benzyna (2.1dm³),42000,43000,42500
-Admiral Kombi,Diesel (2.1dm³),42000,43000,42500
-Admiral Kombi,LPG (2.1dm³),42000,43000,42500
-Blista Compact,Benzyna (2.6dm³),76000,78000,77000
-Blista Compact,Diesel (2.6dm³),76000,78000,77000
-Blista Compact,LPG (2.6dm³),76000,78000,77000
-Buccaneer,Benzyna (2.3dm³),33000,35000,34000
-Buccaneer,Diesel (2.3dm³),33000,35000,34000
-Buccaneer,LPG (2.3dm³),33000,35000,34000
-Cadrona,Benzyna (1.8dm³),30000,33000,31500
-Cadrona,Diesel (1.8dm³),30000,33000,31500
-Cadrona,LPG (1.8dm³),30000,33000,31500
-Celsion,Benzyna (2.4dm³),140000,145000,142500
-Celsion,Diesel (2.4dm³),140000,145000,142500
-Celsion,LPG (2.4dm³),140000,145000,142500
-Club,Benzyna (3.2dm³),76000,78000,77000
-Club,Diesel (3.2dm³),76000,78000,77000
-Club,LPG (3.2dm³),76000,78000,77000
-Elegant,Benzyna (1.8dm³),38000,41000,39500
-Elegant,Diesel (1.8dm³),38000,41000,39500
-Elegant,LPG (1.8dm³),38000,41000,39500
-Emperor,Benzyna (1.9dm³),30000,32000,31000
-Emperor,Diesel (1.9dm³),30000,32000,31000
-Emperor,LPG (1.9dm³),30000,32000,31000
-Euros,Benzyna (2.3dm³),65000,68000,66500
-Euros,Diesel (2.3dm³),65000,68000,66500
-Euros,LPG (2.3dm³),65000,68000,66500
-Feltzer,Benzyna (2.9dm³),100000,102000,101000
-Feltzer,Diesel (2.9dm³),100000,102000,101000
-Feltzer,LPG (2.9dm³),100000,102000,101000
-Feltzer GT,Benzyna (2.9dm³),270000,280000,275000
-Feltzer GT,Diesel (2.9dm³),270000,280000,275000
-Feltzer GT,LPG (2.9dm³),270000,280000,275000
-Fortune,Benzyna (1.8dm³),38000,40000,39000
-Fortune,Diesel (1.8dm³),38000,40000,39000
-Fortune,LPG (1.8dm³),38000,40000,39000
-Fortune 240SX,Benzyna (1.8dm³),110000,112000,111000
-Fortune 240SX,Diesel (1.8dm³),110000,112000,111000
-Fortune 240SX,LPG (1.8dm³),110000,112000,111000
-Glendale,Benzyna (2.1dm³),35000,38000,36500
-Glendale,Diesel (2.1dm³),35000,38000,36500
-Glendale,LPG (2.1dm³),35000,38000,36500
-Greenwood,Benzyna (1.8dm³),18000,20000,19000
-Greenwood,Diesel (1.8dm³),18000,20000,19000
-Greenwood,LPG (1.8dm³),18000,20000,19000
-Journey,Benzyna (1.1dm³),70000,75000,72500
-Journey,Diesel (1.1dm³),70000,75000,72500
-Journey,LPG (1.1dm³),70000,75000,72500
-Majestic,Benzyna (2.1dm³),34000,35000,34500
-Majestic,Diesel (2.1dm³),34000,35000,34500
-Majestic,LPG (2.1dm³),34000,35000,34500
-Manana DTM,Benzyna (1.7dm³),88000,90000,89000
-Manana DTM,Diesel (1.7dm³),88000,90000,89000
-Manana DTM,LPG (1.7dm³),88000,90000,89000
-Merit,Benzyna (2.1dm³),70000,72000,71000
-Merit,Diesel (2.1dm³),70000,72000,71000
-Merit,LPG (2.1dm³),70000,72000,71000
-Nebula,Benzyna (1.8dm³),38000,41000,39500
-Nebula,Diesel (1.8dm³),38000,41000,39500
-Nebula,LPG (1.8dm³),38000,41000,39500
-Premier,Benzyna (2.1dm³),63000,65000,64000
-Premier,Diesel (2.1dm³),63000,65000,64000
-Premier,LPG (2.1dm³),63000,65000,64000
-Primo,Benzyna (1.5dm³),26000,27000,26500
-Primo,Diesel (1.5dm³),26000,27000,26500
-Primo,LPG (1.5dm³),26000,27000,26500
-Primo Kombi,Benzyna (1.5dm³),26000,27000,26500
-Primo Kombi,Diesel (1.5dm³),26000,27000,26500
-Primo Kombi,LPG (1.5dm³),26000,27000,26500
-Sabre,Benzyna (2.3dm³),58000,60000,59000
-Sabre,Diesel (2.3dm³),58000,60000,59000
-Sabre,LPG (2.3dm³),58000,60000,59000
-Schafter,Benzyna (2.1dm³),125000,130000,127500
-Schafter,Diesel (2.1dm³),125000,130000,127500
-Schafter,LPG (2.1dm³),125000,130000,127500
-Sentinel,Benzyna (2.3dm³),65000,68000,66500
-Sentinel,Diesel (2.3dm³),65000,68000,66500
-Sentinel,LPG (2.3dm³),65000,68000,66500
-Sentinel Kombi,Benzyna (2.3dm³),65000,68000,66500
-Sentinel Kombi,Diesel (2.3dm³),65000,68000,66500
-Sentinel Kombi,LPG (2.3dm³),65000,68000,66500
-Solair,Benzyna (1.8dm³),39000,40000,39500
-Solair,Diesel (1.8dm³),39000,40000,39500
-Solair,LPG (1.8dm³),39000,40000,39500
-Stallion,Benzyna (2.2dm³),75000,77000,76000
-Stallion,Diesel (2.2dm³),75000,77000,76000
-Stallion,LPG (2.2dm³),75000,77000,76000
-Stallion GTT,Benzyna (2.2dm³),93000,98000,95500
-Stallion GTT,Diesel (2.2dm³),93000,98000,95500
-Stallion GTT,LPG (2.2dm³),93000,98000,95500
-Stanier,Benzyna (3.0dm³),120000,125000,122500
-Stanier,Diesel (3.0dm³),120000,125000,122500
-Stanier,LPG (3.0dm³),120000,125000,122500
-Stratum,Benzyna (1.8dm³),55000,56000,55500
-Stratum,Diesel (1.8dm³),55000,56000,55500
-Stratum,LPG (1.8dm³),55000,56000,55500
-Sunrise,Benzyna (1.4dm³),20000,23000,21500
-Sunrise,Diesel (1.4dm³),20000,23000,21500
-Sunrise,LPG (1.4dm³),20000,23000,21500
-Sunrise Kombi,Benzyna (1.4dm³),20000,23000,21500
-Sunrise Kombi,Diesel (1.4dm³),20000,23000,21500
-Sunrise Kombi,LPG (1.4dm³),20000,23000,21500
-Tahoma,Benzyna (2.3dm³),60000,62000,61000
-Tahoma,Diesel (2.3dm³),60000,62000,61000
-Tahoma,LPG (2.3dm³),60000,62000,61000
-Vincent,Benzyna (1.5dm³),28000,30000,29000
-Vincent,Diesel (1.5dm³),28000,30000,29000
-Vincent,LPG (1.5dm³),28000,30000,29000
-Vincent Kombi,Benzyna (1.5dm³),28000,30000,29000
-Vincent Kombi,Diesel (1.5dm³),28000,30000,29000
-Vincent Kombi,LPG (1.5dm³),28000,30000,29000
-Virgo,Benzyna (1.5dm³),41000,42000,41500
-Virgo,Diesel (1.5dm³),41000,42000,41500
-Virgo,LPG (1.5dm³),41000,42000,41500
-Washington,Benzyna (1.9dm³),47000,49000,48000
-Washington,Diesel (1.9dm³),47000,49000,48000
-Washington,LPG (1.9dm³),47000,49000,48000
-Willard,Benzyna (1.5dm³),44000,46000,45000
-Willard,Diesel (1.5dm³),44000,46000,45000
-Willard,LPG (1.5dm³),44000,46000,45000
-Willard Kombi,Benzyna (1.5dm³),44000,46000,45000
-Willard Kombi,Diesel (1.5dm³),44000,46000,45000
-Willard Kombi,LPG (1.5dm³),44000,46000,45000
-Windsor,Benzyna (3.2dm³),120000,123000,121500
-Windsor,Diesel (3.2dm³),120000,123000,121500
-Windsor,LPG (3.2dm³),120000,123000,121500
-Alpha,Benzyna (2.2dm³),110000,113000,111500
-Alpha,Diesel (2.2dm³),110000,113000,111500
-Alpha,LPG (2.2dm³),110000,113000,111500
-Banshee,Benzyna (3.7dm³),560000,563000,561500
-Banshee,Diesel (3.7dm³),560000,563000,561500
-Banshee,LPG (3.7dm³),560000,563000,561500
-Buffalo,Benzyna (2.9dm³),260000,280000,270000
-Buffalo,Diesel (2.9dm³),260000,280000,270000
-Buffalo,LPG (2.9dm³),260000,280000,270000
-Bullet,Benzyna (3.2dm³),740000,745000,742500
-Bullet,Diesel (3.2dm³),740000,745000,742500
-Bullet,LPG (3.2dm³),740000,745000,742500
-Camper,Benzyna (1.3dm³),140000,150000,145000
-Camper,Diesel (1.3dm³),140000,150000,145000
-Camper,LPG (1.3dm³),140000,150000,145000
-Cheetah,Benzyna (3.2dm³),550000,560000,555000
-Cheetah,Diesel (3.2dm³),550000,560000,555000
-Cheetah,LPG (3.2dm³),550000,560000,555000
-Comet,Benzyna (3.2dm³),370000,380000,375000
-Comet,Diesel (3.2dm³),370000,380000,375000
-Comet,LPG (3.2dm³),370000,380000,375000
-Elegy,Benzyna (2.9dm³),270000,275000,272500
-Elegy,Diesel (2.9dm³),270000,275000,272500
-Elegy,LPG (2.9dm³),270000,275000,272500
-Flash,Benzyna (2.3dm³),118000,122000,120000
-Flash,Diesel (2.3dm³),118000,122000,120000
-Flash,LPG (2.3dm³),118000,122000,120000
-Infernus,Benzyna (3.2dm³),1700000,1705000,1702500
-Infernus,Diesel (3.2dm³),1700000,1705000,1702500
-Infernus,LPG (3.2dm³),1700000,1705000,1702500
-Jester,Benzyna (2.9dm³),180000,183000,181500
-Jester,Diesel (2.9dm³),180000,183000,181500
-Jester,LPG (2.9dm³),180000,183000,181500
-Phoenix,Benzyna (2.6dm³),120000,123000,121500
-Phoenix,Diesel (2.6dm³),120000,123000,121500
-Phoenix,LPG (2.6dm³),120000,123000,121500
-Rancher Long,Benzyna (2.1dm³),1340000,1350000,1345000
-Rancher Long,Diesel (2.1dm³),1340000,1350000,1345000
-Rancher Long,LPG (2.1dm³),1340000,1350000,1345000
-Sultan,Benzyna (2.9dm³),350000,363000,356500
-Sultan,Diesel (2.9dm³),350000,363000,356500
-Sultan,LPG (2.9dm³),350000,363000,356500
-Sultan Kombi,Benzyna (2.9dm³),350000,363000,356500
-Sultan Kombi,Diesel (2.9dm³),350000,363000,356500
-Sultan Kombi,LPG (2.9dm³),350000,363000,356500
-Super GT,Benzyna (2.6dm³),185000,195000,190000
-Super GT,Diesel (2.6dm³),185000,195000,190000
-Super GT,LPG (2.6dm³),185000,195000,190000
-Turismo,Benzyna (3.2dm³),1620000,1650000,1635000
-Turismo,Diesel (3.2dm³),1620000,1650000,1635000
-Turismo,LPG (3.2dm³),1620000,1650000,1635000
-Uranus,Benzyna (1.8dm³),70000,75000,72500
-Uranus,Diesel (1.8dm³),70000,75000,72500
-Uranus,LPG (1.8dm³),70000,75000,72500
-ZR-350,Benzyna (2.9dm³),280000,283000,281500
-ZR-350,Diesel (2.9dm³),280000,283000,281500
-ZR-350,LPG (2.9dm³),280000,283000,281500
-BF Injection,Benzyna (3.2dm³),78000,80000,79000
-BF Injection,Diesel (3.2dm³),78000,80000,79000
-BF Injection,LPG (3.2dm³),78000,80000,79000
-Contander,Benzyna (2.5dm³),70000,72000,71000
-Contander,Diesel (2.5dm³),70000,72000,71000
-Contander,LPG (2.5dm³),70000,72000,71000
-Huntley,Benzyna (2.5dm³),132500,137500,135000
-Huntley,Diesel (2.5dm³),132500,137500,135000
-Huntley,LPG (2.5dm³),132500,137500,135000
-Landstalker,Benzyna (2.5dm³),56000,58000,57000
-Landstalker,Diesel (2.5dm³),56000,58000,57000
-Landstalker,LPG (2.5dm³),56000,58000,57000
-Mesa,Benzyna (2.3dm³),45000,47000,46000
-Mesa,Diesel (2.3dm³),45000,47000,46000
-Mesa,LPG (2.3dm³),45000,47000,46000
-Mesa Rubicon,Benzyna (2.3dm³),65000,67000,66000
-Mesa Rubicon,Diesel (2.3dm³),65000,67000,66000
-Mesa Rubicon,LPG (2.3dm³),65000,67000,66000
-Patriot,Benzyna (2.5dm³),750000,770000,760000
-Patriot,Diesel (2.5dm³),750000,770000,760000
-Patriot,LPG (2.5dm³),750000,770000,760000
-Rancher,Benzyna (1.8dm³),55000,57000,56000
-Rancher,Diesel (1.8dm³),55000,57000,56000
-Rancher,LPG (1.8dm³),55000,57000,56000
-Sandking,Benzyna (2.9dm³),240000,245000,242500
-Sandking,Diesel (2.9dm³),240000,245000,242500
-Sandking,LPG (2.9dm³),240000,245000,242500
-Yosemite,Benzyna (2.5dm³),85000,90000,87500
-Yosemite,Diesel (2.5dm³),85000,90000,87500
-Yosemite,LPG (2.5dm³),85000,90000,87500
-Maverick,Benzyna (5.9dm³),2800000,3000000,2900000
-Maverick,Diesel (5.9dm³),2800000,3000000,2900000
-Maverick,LPG (5.9dm³),2800000,3000000,2900000
-News Chopper,Benzyna (5.9dm³),2000000,2200000,2100000
-News Chopper,Diesel (5.9dm³),2000000,2200000,2100000
-News Chopper,LPG (5.9dm³),2000000,2200000,2100000
-Dinghy,-,72000,76000,74000
-Jetmax,-,750000,756000,753000
-Launch,-,1200000,1210000,1205000
-Marquis,-,1100000,1105000,1102500
-Speeder,-,550000,555000,552500
-Squalo,-,600000,610000,605000
-Tropic,-,1050000,1060000,1055000
-Moonbeam Classic,Diesel (1.6dm³),7100,7100,7100
-Moonbeam Classic,Benzyna (1.2dm³),7100,7100,7100
+model,vehicle,engine,price
+422,Bobcat,1.8,33 000 - 34 000
+401,Bravura,1.2,21 000 - 23 000
+542,Clover,2.3,17 000 - 19 000
+542,Clover Wagon,2.3,17 000 - 19 000
+410,Manana,1.7,5 000 - 6 000
+418,Moonbeam,1.2,6 700 - 7 500
+404,Perennial,1.5,5 500 - 6 900
+600,Picador,2.5,15 500 - 16 000
+436,Previon,1.5,9 500 - 10 500
+543,Sadler,2.5,18 000 - 19 000
+549,Tampa,2.3,24 000 - 25 000
+478,Walton,1.1,3 500 - 4 200
+445,Admiral,2.1,46 000 - 47 000
+445,Admiral Kombi,2.1,42 000 - 43 000
+496,Blista Compact,2.6,76 000 - 78 000
+518,Buccaneer,2.3,33 000 - 35 000
+527,Cadrona,1.8,30 000 - 33 000
+420,Celsion,2.4,140 000 - 145 000
+589,Club,3.2,76 000 - 78 000
+507,Elegant,1.8,38 000 - 41 000
+585,Emperor,1.9,30 000 - 32 000
+587,Euros,2.3,65 000 - 68 000
+533,Feltzer,2.9,100 000 - 102 000
+533,Feltzer GT,2.9,270 000 - 280 000
+526,Fortune,1.8,38 000 - 40 000
+526,Fortune 240SX,1.8,110 000 - 112 000
+466,Glendale,2.1,35 000 - 38 000
+492,Greenwood,1.8,18 000 - 20 000
+508,Journey,1.1,70 000 - 75 000
+517,Majestic,2.1,34 000 - 35 000
+410,Manana DTM,1.7,88 000 - 90 000
+551,Merit,2.1,70 000 - 72 000
+516,Nebula,1.8,38 000 - 41 000
+426,Premier,2.1,63 000 - 65 000
+547,Primo,1.5,26 000 - 27 000
+547,Primo Kombi,1.5,26 000 - 27 000
+475,Sabre,2.3,58 000 - 60 000
+604,Schafter,2.1,125 000 - 130 000
+405,Sentinel,2.3,65 000 - 68 000
+405,Sentinel Kombi,2.3,65 000 - 68 000
+458,Solair,1.8,39 000 - 40 000
+439,Stallion,2.2,75 000 - 77 000
+439,Stallion GTT,2.2,93 000 - 98 000
+596,Stanier,3.0,120 000 - 125 000
+561,Stratum,1.8,55 000 - 56 000
+550,Sunrise,1.4,20 000 - 23 000
+550,Sunrise Kombi,1.4,20 000 - 23 000
+566,Tahoma,2.3,60 000 - 62 000
+540,Vincent,1.5,28 000 - 30 000
+540,Vincent Kombi,1.5,28 000 - 30 000
+491,Virgo,1.5,41 000 - 42 000
+421,Washington,1.9,47 000 - 49 000
+529,Willard,1.5,44 000 - 46 000
+529,Willard Kombi,1.5,44 000 - 46 000
+555,Windsor,3.2,120 000 - 123 000
+602,Alpha,2.2,110 000 - 113 000
+429,Banshee,3.7,560 000 - 563 000
+402,Buffalo,2.9,260 000 - 280 000
+541,Bullet,3.2,740 000 - 745 000
+483,Camper,1.3,140 000 - 150 000
+415,Cheetah,3.2,550 000 - 560 000
+480,Comet,3.2,370 000 - 380 000
+562,Elegy,2.9,270 000 - 275 000
+565,Flash,2.3,118 000 - 122 000
+411,Infernus,3.2,1 700 000 - 1 705 000
+559,Jester,2.9,180 000 - 183 000
+603,Phoenix,2.6,120 000 - 123 000
+490,Rancher Long,2.1,1 340 000 - 1 350 000
+560,Sultan,2.9,350 000 - 363 000
+560,Sultan Kombi,2.9,350 000 - 363 000
+506,Super GT,2.6,185 000 - 195 000
+451,Turismo,3.2,1 620 000 - 1 650 000
+558,Uranus,1.8,70 000 - 75 000
+477,ZR-350,2.9,280 000 - 283 000
+424,BF Injection,3.2,78 000 - 80 000
+605,Contander,2.5,70 000 - 72 000
+579,Huntley,2.5,132 500 - 137 500
+400,Landstalker,2.5,56 000 - 58 000
+500,Mesa,2.3,45 000 - 47 000
+500,Mesa Rubicon,2.3,65 000 - 67 000
+470,Patriot,2.5,750 000 - 770 000
+489,Rancher,1.8,55 000 - 57 000
+495,Sandking,2.9,240 000 - 245 000
+554,Yosemite,2.5,85 000 - 90 000
+429,Banshee Viper GTS,3.7,830 000 - 850 000
+541,Bullet GT,3.2,1 100 000 - 1 120 000
+502,Cheetah '76,2.9,730 000 - 735 000
+504,DeLuxo,2.8,1 000 000 - 1 010 000
+503,Feroci,3.0,970 000 - 975 000
+411,Infernus Kakimoto,3.2,2 270 000 - 2 300 000
+411,Infernus NSX,3.2,1 970 000 - 2 020 000
+411,Infernus Pandem,3.2,2 500 000 - 2 550 000
+494,Monroe,3.0,780 000 - 782 000
+451,Turismo Competizione,3.2,2 100 000 - 2 150 000
+581,BF-400,0.4,115 000 - 120 000
+462,Faggio,0.05 (0.1),28 000 - 30 000
+521,FCR-900,0.8,185 000 - 190 000
+521,FCR-900 RR,0.8,850 000 - 860 000
+463,Freeway,1.0,100 000 - 105 000
+522,NRG-500,1.0,1 020 000 - 1 050 000
+461,PCJ-600,0.5,125 000 - 128 000
+461,PCJ-600 XR,0.5,600 000 - 610 000
+471,Quadbike,0.4,70 000 - 73 000
+468,Sanchez,0.3,60 000 - 62 000
+586,Wayfarer,1.4,52 000 - 55 000
+536,Blade,2.3,200 000 - 210 000
+575,Broadway,1.8,185 000 - 190 000
+534,Remington,2.2,170 000 - 180 000
+567,Savanna,2.3,220 000 - 225 000
+535,Slamvan,4.8,180 000 - 190 000
+576,Tornado,1.8,60 000 - 65 000
+412,Voodoo,2.2,150 000 - 160 000
+474,Hermes,1.5,350 000 - 365 000
+499,Benson,1.1,40 000 - 43 000
+498,Boxville,1.1,52 000 - 55 000
+482,Burrito,2.5,55 000 - 60 000
+414,Mule,1.5,100 000 - 103 000
+428,Securicar,1.2,270 000 - 275 000
+459,Speedvan,2.5,120 000 - 125 000
+456,Yankee,1.1,178 000 - 181 000
+473,Dinghy,-,72 000 - 76 000
+493,Jetmax,-,750 000 - 756 000
+595,Launch,-,1 200 000 - 1 210 000
+484,Marquis,-,1 100 000 - 1 105 000
+452,Speeder,-,550 000 - 555 000
+446,Squalo,-,600 000 - 610 000
+454,Tropic,-,1 050 000 - 1 060 000
+487,Maverick,5.9,2 800 000 - 3 000 000
+488,News Chopper,5.9,2 000 000 - 2 200 000
