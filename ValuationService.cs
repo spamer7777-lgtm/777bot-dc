@@ -95,6 +95,8 @@ namespace _777bot
             ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
             ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
 
+            // UWAGA: to jest tylko alias nazwy -> klucz w mech_prices.csv
+            // Samo liczenie AWD/FWD/RWD robimy osobno w ComputeMechanical (na stringu "name")
             ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
             ["modul zmiany napedu"] = "zmiana_napedu:mzn",
             ["mzn"] = "zmiana_napedu:mzn",
@@ -129,152 +131,49 @@ namespace _777bot
             return res;
         }
 
-      private void ComputeMechanical(VehicleCard card, ValuationResult res)
-{
-    // 1) Najpierw sprawdź, czy w ogóle jest przeniesienie/zmiana napędu (AWD/FWD/RWD),
-    //    żeby potem nie liczyć "MZN" jako osobnej pozycji w tym samym pojeździe.
-    bool hasDriveChange = card.MechanicalTuningRaw.Any(r =>
-        System.Text.RegularExpressions.Regex.IsMatch(
-            TextNorm.Normalize(r),
-            @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase
-        )
-    );
-
-    foreach (var raw in card.MechanicalTuningRaw)
-    {
-        var name = TextNorm.Normalize(raw);
-
-        // =========================
-        // 0) Opony (...) jako wizualne
-        // =========================
-        var tires = System.Text.RegularExpressions.Regex.Match(
-            name,
-            @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        if (tires.Success)
+        private long ComputeSalonAvg(VehicleCard card, ValuationResult res, out double? baseSalonDm3)
         {
-            var v = TextNorm.NormalizeKey(tires.Groups["v"].Value);
-            v = ToAsciiPl(v);
+            baseSalonDm3 = null;
 
-            if (v.Contains("sport")) v = "sportowe";
-            else if (v.Contains("teren")) v = "terenowe";
-            else if (v.Contains("drift")) v = "driftowe";
+            var vehicleName = card.ModelRaw;
+            var idx = vehicleName.LastIndexOf('(');
+            if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
 
-            var tireKey = TextNorm.NormalizeKey("opony:" + v);
+            var vehicleKey = TextNorm.NormalizeKey(vehicleName);
+            var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
 
-            if (_cat.VisualByName.TryGetValue(tireKey, out var tireBase))
+            var strict = _cat.Salon
+                .Where(r =>
+                    TextNorm.NormalizeKey(r.Vehicle) == vehicleKey &&
+                    TextNorm.NormalizeKey(r.Engine) == engineKey)
+                .ToList();
+
+            if (strict.Count > 0)
             {
-                var tireMarket = (long)Math.Round(tireBase * 0.5);
-                res.VisualItems.Add(($"Opony ({FirstUpper(v)})", tireBase, tireMarket));
-            }
-            else
-            {
-                res.MissingPrices.Add($"Wizualne: brak ceny dla '{name}' (klucz '{tireKey}')");
+                baseSalonDm3 = ExtractMinDm3(strict.Select(x => x.Engine));
+                return (long)Math.Round(strict.Select(x => x.Price).Average());
             }
 
-            continue;
-        }
+            var byVehicle = _cat.Salon
+                .Where(r => TextNorm.NormalizeKey(r.Vehicle) == vehicleKey)
+                .ToList();
 
-        // =========================
-        // 1) PRZENIESIENIE/ZMIANA NAPĘDU (AWD/FWD/RWD) - wykrywaj na "name"
-        // =========================
-        var driveRaw = System.Text.RegularExpressions.Regex.Match(
-            name,
-            @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
-            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-        if (driveRaw.Success)
-        {
-            var mode = driveRaw.Groups[2].Value.ToLowerInvariant(); // awd/fwd/rwd
-
-            // UWAGA: jeśli w CSV masz klucze naped:awd itp., zostaw jak jest:
-            // key = $"naped:{mode}";
-            var keyDrive = $"naped:{mode}";
-
-            if (_cat.MechByKey.TryGetValue(keyDrive, out var baseDrive))
+            if (byVehicle.Count == 0)
             {
-                var marketDrive = (long)Math.Round(baseDrive * 0.5);
-                res.MechItems.Add((name, baseDrive, marketDrive, " (50%)"));
-            }
-            else
-            {
-                res.MissingPrices.Add($"Mechaniczne: brak ceny dla '{name}' (klucz '{keyDrive}')");
+                var bmKey = TextNorm.NormalizeKey(card.BaseModel);
+                byVehicle = _cat.Salon
+                    .Where(r => TextNorm.NormalizeKey(r.Vehicle) == bmKey)
+                    .ToList();
             }
 
-            continue;
-        }
+            if (byVehicle.Count == 0)
+            {
+                res.MissingPrices.Add($"Salon: brak w salon_prices.csv dla '{vehicleName}' (szukam po nazwie auta)");
+                return 0;
+            }
 
-        // =========================
-        // 2) Jeśli wykryto drive-change w aucie -> NIE LICZ "MZN"/"Moduł zmiany napędu"
-        //    bo to w praktyce robi podwójne liczenie (tak jak u Ciebie).
-        // =========================
-        if (hasDriveChange)
-        {
-            var isMznLabel = System.Text.RegularExpressions.Regex.IsMatch(
-                name,
-                @"^Moduł\s+zmiany\s+nap[eę]du\s*$|^\s*MZN\s*$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            if (isMznLabel)
-                continue;
-        }
-
-        // =========================
-        // 3) Normalna ścieżka mechanicznych
-        // =========================
-        var key = TextNorm.NormalizeKey(name);
-        key = ToAsciiPl(key);
-
-        if (MechAliases.TryGetValue(key, out var alias))
-            key = TextNorm.NormalizeKey(alias);
-
-        var tank = System.Text.RegularExpressions.Regex.Match(
-            key,
-            @"powiekszony\s+bak\s*\(\s*(\d{2,3})l\s*\)");
-        if (tank.Success)
-            key = $"bak_paliwa:{tank.Groups[1].Value}l";
-
-        var lpg = System.Text.RegularExpressions.Regex.Match(
-            key,
-            @"butla\s+lpg\s*\(\s*(\d{2,3})l\s*\)");
-        if (lpg.Success)
-            key = $"lpg:{lpg.Groups[1].Value}l";
-
-        // NIE rób już drive regex na key (bo robimy to wyżej na name)
-        // var drive = Regex.Match(key, ...)
-
-        // Moduł zmiany napędu (MZN) - zostaw, ale już bez podwójnego liczenia (patrz blok 2)
-        if (key.Contains("modul_zmiany_napedu") || key.Contains("modul zmiany napedu") || key == "mzn")
-            key = "mzn";
-
-        if (key == "aplikacja transportowa" || key == "aplikacja_transportowa")
-            key = "aplikacja_transportowa";
-
-        key = NormalizeMechKey(key);
-
-        if (_cat.MechByKey.TryGetValue(key, out var basePrice))
-        {
-            var full =
-                key.StartsWith("c.f.i:") ||
-                key.StartsWith("zestaw:");
-
-            var mult = full ? 1.0 : 0.5;
-            var market = (long)Math.Round(basePrice * mult);
-
-            res.MechItems.Add((
-                name,
-                basePrice,
-                market,
-                full ? " (100%)" : " (50%)"
-            ));
-        }
-        else
-        {
-            res.MissingPrices.Add(
-                $"Mechaniczne: brak ceny dla '{name}' (klucz '{key}')"
-            );
+            baseSalonDm3 = ExtractMinDm3(byVehicle.Select(x => x.Engine));
+            return (long)Math.Round(byVehicle.Select(x => x.Price).Average());
         }
 
         private double? ExtractMinDm3(IEnumerable<string> engines)
@@ -317,22 +216,16 @@ namespace _777bot
                     list.Add(k);
             }
 
-            // 1) BaseModel (pełny)
             Add(card.BaseModel);
 
-            // 2) ModelRaw bez "(...)"
             var vehicleName = card.ModelRaw;
             var idx = vehicleName.LastIndexOf('(');
             if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
             Add(vehicleName);
 
-            // 3) pierwszy człon nazwy (najczęściej to "bazowy" model)
-            //    np. "Infernus Pandem" -> "Infernus"
-            //        "Sultan Kombi" -> "Sultan"
             var firstToken = vehicleName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             Add(firstToken);
 
-            // 4) jeszcze pierwszy token z BaseModel (na wypadek gdy ModelRaw jest inne)
             var firstTokenBm = (card.BaseModel ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             Add(firstTokenBm);
 
@@ -358,7 +251,6 @@ namespace _777bot
             if (currentDm3 <= baseDm3 + 0.0001)
                 return (0, 0);
 
-            // ✅ użyj kandydatów zamiast tylko BaseModel
             var candidates = GetEngineModelCandidates(card);
 
             var steps = _cat.EngineUpgrades
@@ -418,7 +310,6 @@ namespace _777bot
 
         private long GetEngineUpgradePriceForDm3(VehicleCard card, ValuationResult res, double dm3)
         {
-            // ✅ użyj kandydatów zamiast tylko BaseModel
             var candidates = GetEngineModelCandidates(card);
 
             var candidatesRows = _cat.EngineUpgrades.Where(r =>
@@ -502,15 +393,13 @@ namespace _777bot
                     var r = widen.Groups["r"].Value;
 
                     var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
-                    long priceF;
-                    if (_cat.VisualByName.TryGetValue(keyF, out priceF))
+                    if (_cat.VisualByName.TryGetValue(keyF, out var priceF))
                         res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
 
                     var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
-                    long priceR;
-                    if (_cat.VisualByName.TryGetValue(keyR, out priceR))
+                    if (_cat.VisualByName.TryGetValue(keyR, out var priceR))
                         res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
@@ -526,8 +415,7 @@ namespace _777bot
                 else
                     key = TextNorm.NormalizeKey(v.Name);
 
-                long namePrice;
-                if (_cat.VisualByName.TryGetValue(key, out namePrice))
+                if (_cat.VisualByName.TryGetValue(key, out var namePrice))
                     res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
                 else
                     res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{key}')");
@@ -568,8 +456,7 @@ namespace _777bot
                 var keyPrefix = type == SpecialColorType.Lights ? "kolor_swiatel:" : "kolor_licznika:";
                 var key = TextNorm.NormalizeKey(keyPrefix + name);
 
-                long p;
-                if (!_cat.VisualByName.TryGetValue(key, out p))
+                if (!_cat.VisualByName.TryGetValue(key, out var p))
                 {
                     res.MissingPrices.Add($"{(type == SpecialColorType.Lights ? "Kolor świateł" : "Kolor licznika")}: brak ceny dla '{name}' (klucz '{keyPrefix}{name}')");
                     return;
@@ -587,11 +474,23 @@ namespace _777bot
 
         private void ComputeMechanical(VehicleCard card, ValuationResult res)
         {
+            // Jeśli w aucie jest przeniesienie/zmiana napędu (AWD/FWD/RWD),
+            // to NIE licz dodatkowo "MZN/Moduł zmiany napędu" jako osobnej pozycji.
+            bool hasDriveChange = card.MechanicalTuningRaw.Any(r =>
+                System.Text.RegularExpressions.Regex.IsMatch(
+                    TextNorm.Normalize(r),
+                    @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                )
+            );
+
             foreach (var raw in card.MechanicalTuningRaw)
             {
                 var name = TextNorm.Normalize(raw);
 
-                // Opony (...) jako wizualne
+                // ======================
+                // Opony (...) -> wizualne
+                // ======================
                 var tires = System.Text.RegularExpressions.Regex.Match(
                     name,
                     @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
@@ -621,6 +520,50 @@ namespace _777bot
                     continue;
                 }
 
+                // ==========================================
+                // Przeniesienie/Zmiana napędu (AWD/FWD/RWD)
+                // - wykrywamy po "name" (z polskimi znakami)
+                // ==========================================
+                var driveRaw = System.Text.RegularExpressions.Regex.Match(
+                    name,
+                    @"\b(zmiana|przeniesienie)\s+nap[eę]du\s*\(\s*(awd|fwd|rwd)\s*\)\b",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (driveRaw.Success)
+                {
+                    var mode = driveRaw.Groups[2].Value.ToLowerInvariant(); // awd/fwd/rwd
+                    var keyDrive = $"naped:{mode}";
+
+                    if (_cat.MechByKey.TryGetValue(keyDrive, out var baseDrive))
+                    {
+                        var marketDrive = (long)Math.Round(baseDrive * 0.5);
+                        res.MechItems.Add((name, baseDrive, marketDrive, " (50%)"));
+                    }
+                    else
+                    {
+                        res.MissingPrices.Add($"Mechaniczne: brak ceny dla '{name}' (klucz '{keyDrive}')");
+                    }
+
+                    continue;
+                }
+
+                // ==========================================
+                // Jeśli jest drive-change, ignoruj MZN/moduł
+                // ==========================================
+                if (hasDriveChange)
+                {
+                    var isMznLabel = System.Text.RegularExpressions.Regex.IsMatch(
+                        name,
+                        @"^Moduł\s+zmiany\s+nap[eę]du\s*$|^\s*MZN\s*$",
+                        System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                    if (isMznLabel)
+                        continue;
+                }
+
+                // ======================
+                // Standard mechaniczne
+                // ======================
                 var key = TextNorm.NormalizeKey(name);
                 key = ToAsciiPl(key);
 
@@ -639,16 +582,11 @@ namespace _777bot
                 if (lpg.Success)
                     key = $"lpg:{lpg.Groups[1].Value}l";
 
-                var drive = System.Text.RegularExpressions.Regex.Match(
-                    key,
-                    @"przeniesienie\s+napedu\s*\(\s*(awd|fwd|rwd)\s*\)");
-                if (drive.Success)
-                    key = $"naped:{drive.Groups[1].Value}";
-
-                if (key.Contains("modul zmiany napedu"))
+                // MZN (jeśli naprawdę występuje jako item i NIE ma drive-change)
+                if (key.Contains("modul_zmiany_napedu") || key.Contains("modul zmiany napedu") || key == "mzn")
                     key = "mzn";
 
-                if (key == "aplikacja transportowa")
+                if (key == "aplikacja transportowa" || key == "aplikacja_transportowa")
                     key = "aplikacja_transportowa";
 
                 key = NormalizeMechKey(key);
