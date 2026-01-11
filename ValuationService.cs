@@ -612,6 +612,28 @@ namespace _777bot
                 return true;
             }
 
+            // ✅ Opony (Sportowe / Terenowe / Driftowe)
+            var tires = System.Text.RegularExpressions.Regex.Match(
+                s,
+                @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (tires.Success)
+            {
+                var v = TextNorm.NormalizeKey(tires.Groups["v"].Value);
+
+                // normalizacja polskich znaków (na wszelki wypadek)
+                v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
+                     .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
+
+                if (v.Contains("sport")) v = "sportowe";
+                else if (v.Contains("teren")) v = "terenowe";
+                else if (v.Contains("drift")) v = "driftowe";
+
+                mappedKey = "opony:" + v;
+                return true;
+            }
+
             return false;
         }
 
