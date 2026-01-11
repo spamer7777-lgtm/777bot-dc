@@ -1,8 +1,12 @@
 ModelKeys,From,To,Price
-Admiral,Admiral Kombi,2.1,2.3,14000
-Admiral,Admiral Kombi,2.3,2.5,16000
-Admiral,Admiral Kombi,2.5,2.7,18000
-Admiral,Admiral Kombi,2.7,2.9,20000
+Admiral,072.1,2.3,14000
+Admiral,2.3,2.5,16000
+Admiral,2.5,2.7,18000
+Admiral,2.7,2.9,20000
+Admiral Kombi,2.1,2.3,14000
+Admiral Kombi,2.3,2.5,16000
+Admiral Kombi,2.5,2.7,18000
+Admiral Kombi,2.7,2.9,20000
 Alpha,2.2,2.4,14000
 Alpha,2.4,2.6,16000
 Alpha,2.6,2.8,18000
@@ -179,12 +183,10 @@ Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.2,3.5,26000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.5,3.8,30000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,3.8,4.1,34000
 Infernus,Infernus Kakimoto,Infernus NSX,Infernus Pandem,4.1,4.4,36000
-
 Infernus Pandem,3.2,3.5,26000
 Infernus Pandem,3.5,3.8,30000
 Infernus Pandem,3.8,4.1,34000
 Infernus Pandem,4.1,4.4,36000
-
 Intruder,1.5,1.6,8000
 Intruder,1.6,1.7,8000
 Intruder,1.7,1.8,10000
