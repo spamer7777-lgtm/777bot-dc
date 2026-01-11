@@ -1,21 +1,21 @@
-BaseModel,KitName,Level,Price
+basemodel,kitname,level,price
 Admiral,STR,25,35000
 Admiral,STR Aero,25,35000
-ALPHA,GT9000 T/R,13,33000
-ALPHA,GTO,20,50000
-ALPHA,GTO T/R,26,65000
-ALPHA,VR-4,38,90000
-ALPHA,VR-4 Aero I,38,90000
-ALPHA,VR-4 Aero II,38,90000
-ALPHA,GTO VR-4,44,110000
-ALPHA,GTO VR-4 Aero I,44,110000
-ALPHA,GTO VR-4 Aero II,44,110000
+Alpha,GT9000 T/R,13,33000
+Alpha,GTO,20,50000
+Alpha,GTO T/R,26,65000
+Alpha,VR-4,38,90000
+Alpha,VR-4 Aero I,38,90000
+Alpha,VR-4 Aero II,38,90000
+Alpha,GTO VR-4,44,110000
+Alpha,GTO VR-4 Aero I,44,110000
+Alpha,GTO VR-4 Aero II,44,110000
 Banshee,Viper,17,65000
-Blista,Rally,20,50000
-Blista,VX,28,55000
-Blista,VX Aero,30,57500
-Blista,GT,44,110000
-Blista,GT Aero,46,115000
+Blista Compact,Rally,20,50000
+Blista Compact,VX,28,55000
+Blista Compact,VX Aero,30,57500
+Blista Compact,GT,44,110000
+Blista Compact,GT Aero,46,115000
 Bobcat,TRD,12,20000
 Bobcat,Offroad,16,28000
 Bravura,Custom,20,35000
@@ -50,10 +50,10 @@ Comet,964,38,125000
 Comet,Popup,24,50000
 Comet,Safari Popup,28,60000
 Comet,964 Popup,44,155000
-Spoiler,Aero I,8,5000
-Spoiler,Aero II,10,7500
-Spoiler,Aero III,12,10000
-Spoiler,Aero IV,15,15000
+Comet,Spoiler Aero I,8,5000
+Comet,Spoiler Aero II,10,7500
+Comet,Spoiler Aero III,12,10000
+Comet,Spoiler Aero IV,15,15000
 Contander,F-350,7,25000
 Elegant,Custom,40,68000
 Elegy,Drift,20,30000
@@ -93,7 +93,7 @@ Merit,Sport,44,86000
 Mesa,Grande,30,60000
 Monroe,LBW,55,125000
 Moonbeam,Classic,6,10000
-Moonbeam,High top,14,25000
+Moonbeam,High Top,14,25000
 Patriot,Expedition,28,60000
 Perennial,Classic,12,30000
 Phoenix,Bandit,38,105000
@@ -174,8 +174,8 @@ Windsor,Sportback,10,10000
 Windsor,Sportback GT,18,28000
 Windsor,Sportback Restomod,40,90000
 Yosemite,F-250,21,44000
-Yosemite,OFFROAD,30,58000
-Yosemite,EXPEDITION,35,65000
+Yosemite,Offroad,30,58000
+Yosemite,Expedition,35,65000
 ZR-350,Amemiya,45,135000
 ZR-350,Rocket Bunny,55,175000
 Quadbike,XTR,5,8000
