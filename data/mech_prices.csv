@@ -30,6 +30,11 @@ zmiana_napedu:awd,50000
 zmiana_napedu:fwd,20000
 zmiana_napedu:mzn,75000
 
+naped:rwd,30000
+naped:awd,50000
+naped:fwd,20000
+naped:mzn,75000
+
 bak_paliwa:100l,45000
 bak_paliwa:125l,55000
 bak_paliwa:150l,65000
@@ -42,6 +47,7 @@ system_abs,15000
 gwintowane_zawieszenie,32500
 hydraulika,45000
 aplikacja_transportowa,15000
+
 
 
 
