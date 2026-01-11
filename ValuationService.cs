@@ -87,10 +87,18 @@ namespace _777bot
 
         private static readonly Dictionary<string, string> MechAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["ogranicznik prędkości"] = "ogranicznik",
-            ["cb radio"] = "cb-radio",
-            ["gwint. zawieszenie"] = "gwintowane zawieszenie",
-            ["gwintowane zawieszenie"] = "gwintowane zawieszenie",
+    // ogranicznik
+    ["ogranicznik prędkości"] = "ogranicznik",
+    ["ogranicznik predkosci"] = "ogranicznik",
+
+    // wykrywacz
+    ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
+    ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
+
+    // MZN
+    ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
+    ["modul zmiany napedu"] = "zmiana_napedu:mzn",
+    ["mzn"] = "zmiana_napedu:mzn",
         };
 
         public ValuationService(PriceCatalog cat, VehicleMongoStore store)
