@@ -13,7 +13,6 @@ namespace _777bot
         public long EngineUpgradePrice { get; set; }
         public long EngineUpgradeMarket { get; set; }
 
-        // ✅ bazowe dm³ z salonu (ustawiane podczas ComputeSalonAvg)
         public double? BaseSalonDm3 { get; set; }
 
         public List<(string name, long basePrice, long marketPrice, string note)> Bodykits { get; set; }
@@ -90,24 +89,19 @@ namespace _777bot
 
         private static readonly Dictionary<string, string> MechAliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            // ogranicznik
             ["ogranicznik prędkości"] = "ogranicznik",
             ["ogranicznik predkosci"] = "ogranicznik",
 
-            // wykrywacz
             ["wykrywacz fotoradarów"] = "wykrywacz_fotoradarow",
             ["wykrywacz fotoradarow"] = "wykrywacz_fotoradarow",
 
-            // MZN
             ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
             ["modul zmiany napedu"] = "zmiana_napedu:mzn",
             ["mzn"] = "zmiana_napedu:mzn",
 
-            // SYSTEM ABS
             ["system abs"] = "system_abs",
             ["abs"] = "system_abs",
 
-            // GWINT
             ["gwint. zawieszenie"] = "gwintowane_zawieszenie",
             ["gwint zawieszenie"] = "gwintowane_zawieszenie",
             ["gwintowane zawieszenie"] = "gwintowane_zawieszenie",
@@ -135,12 +129,10 @@ namespace _777bot
             return res;
         }
 
-        // ✅ SALON: najpierw próba auto+silnik, potem fallback po samej nazwie auta (ignoruje silnik)
         private long ComputeSalonAvg(VehicleCard card, ValuationResult res, out double? baseSalonDm3)
         {
             baseSalonDm3 = null;
 
-            // Nazwa auta z karty bez "(...)"
             var vehicleName = card.ModelRaw;
             var idx = vehicleName.LastIndexOf('(');
             if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
@@ -148,7 +140,6 @@ namespace _777bot
             var vehicleKey = TextNorm.NormalizeKey(vehicleName);
             var engineKey = TextNorm.NormalizeKey(card.EngineRaw);
 
-            // 1) dokładnie: auto + silnik
             var strict = _cat.Salon
                 .Where(r =>
                     TextNorm.NormalizeKey(r.Vehicle) == vehicleKey &&
@@ -161,12 +152,10 @@ namespace _777bot
                 return (long)Math.Round(strict.Select(x => x.Price).Average());
             }
 
-            // 2) fallback: po samej nazwie auta (ignoruj silnik)
             var byVehicle = _cat.Salon
                 .Where(r => TextNorm.NormalizeKey(r.Vehicle) == vehicleKey)
                 .ToList();
 
-            // 3) jeszcze fallback: po BaseModel (jakby karta miała inne "ModelRaw")
             if (byVehicle.Count == 0)
             {
                 var bmKey = TextNorm.NormalizeKey(card.BaseModel);
@@ -212,7 +201,41 @@ namespace _777bot
             return min;
         }
 
-        // ✅ SILNIK: SUMA kroków od bazowego dm³ (z salonu) do aktualnego dm³ (z karty)
+        // ✅ NOWE: lista kandydatów modelu pod engine_upgrades (żeby warianty typu "Infernus Pandem" łapały "Infernus")
+        private List<string> GetEngineModelCandidates(VehicleCard card)
+        {
+            var list = new List<string>();
+
+            void Add(string s)
+            {
+                if (string.IsNullOrWhiteSpace(s)) return;
+                var k = TextNorm.NormalizeKey(s);
+                if (!string.IsNullOrWhiteSpace(k) && !list.Contains(k))
+                    list.Add(k);
+            }
+
+            // 1) BaseModel (pełny)
+            Add(card.BaseModel);
+
+            // 2) ModelRaw bez "(...)"
+            var vehicleName = card.ModelRaw;
+            var idx = vehicleName.LastIndexOf('(');
+            if (idx > 0) vehicleName = vehicleName.Substring(0, idx).Trim();
+            Add(vehicleName);
+
+            // 3) pierwszy człon nazwy (najczęściej to "bazowy" model)
+            //    np. "Infernus Pandem" -> "Infernus"
+            //        "Sultan Kombi" -> "Sultan"
+            var firstToken = vehicleName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            Add(firstToken);
+
+            // 4) jeszcze pierwszy token z BaseModel (na wypadek gdy ModelRaw jest inne)
+            var firstTokenBm = (card.BaseModel ?? "").Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+            Add(firstTokenBm);
+
+            return list;
+        }
+
         private (long basePrice, long marketPrice) ComputeEngineUpgrade(VehicleCard card, ValuationResult res, double? baseSalonDm3)
         {
             if (!VehicleCardParser.TryParseEngineDisplacementDm3(card.EngineRaw, out var currentDm3))
@@ -221,7 +244,6 @@ namespace _777bot
                 return (0, 0);
             }
 
-            // brak bazowego dm³ -> fallback (stare zachowanie)
             if (!baseSalonDm3.HasValue)
             {
                 var single = GetEngineUpgradePriceForDm3(card, res, currentDm3);
@@ -233,8 +255,8 @@ namespace _777bot
             if (currentDm3 <= baseDm3 + 0.0001)
                 return (0, 0);
 
-            // pobierz kroki dla modelu
-            var bm = TextNorm.NormalizeKey(card.BaseModel);
+            // ✅ użyj kandydatów zamiast tylko BaseModel
+            var candidates = GetEngineModelCandidates(card);
 
             var steps = _cat.EngineUpgrades
                 .Where(r =>
@@ -242,7 +264,7 @@ namespace _777bot
                     var keys = r.ModelKeys.Split(',')
                         .Select(k => TextNorm.NormalizeKey(k))
                         .ToList();
-                    return keys.Contains(bm);
+                    return keys.Any(k => candidates.Contains(k));
                 })
                 .OrderBy(r => r.From)
                 .ThenBy(r => r.To)
@@ -250,7 +272,7 @@ namespace _777bot
 
             if (steps.Count == 0)
             {
-                res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}'");
+                res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}' (kandydaci: {string.Join(", ", candidates)})");
                 return (0, 0);
             }
 
@@ -293,23 +315,24 @@ namespace _777bot
 
         private long GetEngineUpgradePriceForDm3(VehicleCard card, ValuationResult res, double dm3)
         {
-            var bm = TextNorm.NormalizeKey(card.BaseModel);
+            // ✅ użyj kandydatów zamiast tylko BaseModel
+            var candidates = GetEngineModelCandidates(card);
 
-            var candidates = _cat.EngineUpgrades.Where(r =>
+            var candidatesRows = _cat.EngineUpgrades.Where(r =>
             {
                 var keys = r.ModelKeys.Split(',')
                     .Select(k => TextNorm.NormalizeKey(k))
                     .ToList();
-                return keys.Contains(bm);
+                return keys.Any(k => candidates.Contains(k));
             }).ToList();
 
-            if (candidates.Count == 0)
+            if (candidatesRows.Count == 0)
             {
-                res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}'");
+                res.MissingPrices.Add($"Silnik: brak wpisu w engine_upgrades.csv dla modelu '{card.BaseModel}' (kandydaci: {string.Join(", ", candidates)})");
                 return 0;
             }
 
-            var match = candidates.FirstOrDefault(r => dm3 >= r.From && dm3 <= r.To);
+            var match = candidatesRows.FirstOrDefault(r => dm3 >= r.From && dm3 <= r.To);
             if (match == null)
             {
                 res.MissingPrices.Add($"Silnik: brak przedziału dla {dm3:0.##}dm³ w '{card.BaseModel}'");
@@ -376,13 +399,15 @@ namespace _777bot
                     var r = widen.Groups["r"].Value;
 
                     var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
-                    if (_cat.VisualByName.TryGetValue(keyF, out var priceF))
+                    long priceF;
+                    if (_cat.VisualByName.TryGetValue(keyF, out priceF))
                         res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
 
                     var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
-                    if (_cat.VisualByName.TryGetValue(keyR, out var priceR))
+                    long priceR;
+                    if (_cat.VisualByName.TryGetValue(keyR, out priceR))
                         res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
@@ -398,7 +423,8 @@ namespace _777bot
                 else
                     key = TextNorm.NormalizeKey(v.Name);
 
-                if (_cat.VisualByName.TryGetValue(key, out var namePrice))
+                long namePrice;
+                if (_cat.VisualByName.TryGetValue(key, out namePrice))
                     res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
                 else
                     res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{key}')");
@@ -439,7 +465,8 @@ namespace _777bot
                 var keyPrefix = type == SpecialColorType.Lights ? "kolor_swiatel:" : "kolor_licznika:";
                 var key = TextNorm.NormalizeKey(keyPrefix + name);
 
-                if (!_cat.VisualByName.TryGetValue(key, out var p))
+                long p;
+                if (!_cat.VisualByName.TryGetValue(key, out p))
                 {
                     res.MissingPrices.Add($"{(type == SpecialColorType.Lights ? "Kolor świateł" : "Kolor licznika")}: brak ceny dla '{name}' (klucz '{keyPrefix}{name}')");
                     return;
@@ -461,7 +488,7 @@ namespace _777bot
             {
                 var name = TextNorm.Normalize(raw);
 
-                // ✅ PRZECHWYT: Opony (...) są wrzucane jako WIZUALNE, nie mechaniczne
+                // Opony (...) jako wizualne
                 var tires = System.Text.RegularExpressions.Regex.Match(
                     name,
                     @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
@@ -488,7 +515,7 @@ namespace _777bot
                         res.MissingPrices.Add($"Wizualne: brak ceny dla '{name}' (klucz '{tireKey}')");
                     }
 
-                    continue; // nie licz tego jako mechaniczne
+                    continue;
                 }
 
                 var key = TextNorm.NormalizeKey(name);
