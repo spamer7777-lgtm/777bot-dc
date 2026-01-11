@@ -30,13 +30,12 @@ bak_paliwa:150l,65000
 radio,500
 cb-radio,1500
 ogranicznik,2000
-ogranicznik prędkości,2000
-wykrywacz fotoradarów,2500
+ogranicznik_prędkości,2000
+wykrywacz_fotoradarów,2500
 system abs,15000
 gwintowane zawieszenie,32500
 gwint. zawieszenie,32500
 hydraulika,45000
-moduł zmiany napędu,0
 zestaw:(u),50000
 zestaw:(t),250000
 zestaw:(w),100000
@@ -46,6 +45,7 @@ Gwintowane zawieszenie,32500
 Moduł zmiany napędu,75000
 Powiększony bak:150l,75000
 aplikacja_transportowa,15000
+
 
 
 
