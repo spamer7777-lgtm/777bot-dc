@@ -254,18 +254,14 @@ namespace _777bot
                 return (0, 0);
             }
 
-            // SUMA kroków base -> current
             var sum = SumEngineUpgradeSteps(steps, baseDm3, currentDm3, card, res);
-
             return (sum, (long)Math.Round(sum * 0.5));
         }
 
-        // ✅ kluczowa logika: sumowanie kroków (2.9->3.1 + 3.1->3.3 + ...)
         private long SumEngineUpgradeSteps(List<EngineUpgradeRow> steps, double baseDm3, double targetDm3, VehicleCard card, ValuationResult res)
         {
             long sum = 0;
 
-            // wybieramy kroki, które mieszczą się w zakresie [base, target]
             var selected = steps
                 .Where(s => s.From >= baseDm3 - 0.0001 && s.To <= targetDm3 + 0.0001)
                 .OrderBy(s => s.From)
@@ -274,17 +270,14 @@ namespace _777bot
 
             if (selected.Count == 0)
             {
-                // awaryjnie spróbuj stary tryb, żeby coś policzyło
                 res.MissingPrices.Add($"Silnik: brak kroków upgrade w engine_upgrades.csv dla '{card.BaseModel}' od {baseDm3:0.##} do {targetDm3:0.##} dm³");
                 return 0;
             }
 
-            // kontrola "łańcucha"
             double cur = baseDm3;
 
             foreach (var s in selected)
             {
-                // jeśli jest dziura, daj info (nie przerywamy, dalej sumujemy)
                 if (s.From > cur + 0.0002)
                     res.MissingPrices.Add($"Silnik: dziura w krokach upgrade dla '{card.BaseModel}' (oczekiwane od {cur:0.##}, a jest od {s.From:0.##})");
 
@@ -298,7 +291,6 @@ namespace _777bot
             return sum;
         }
 
-        // fallback / stary tryb: pojedynczy przedział (zostawione)
         private long GetEngineUpgradePriceForDm3(VehicleCard card, ValuationResult res, double dm3)
         {
             var bm = TextNorm.NormalizeKey(card.BaseModel);
@@ -384,15 +376,13 @@ namespace _777bot
                     var r = widen.Groups["r"].Value;
 
                     var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
-                    long priceF;
-                    if (_cat.VisualByName.TryGetValue(keyF, out priceF))
+                    if (_cat.VisualByName.TryGetValue(keyF, out var priceF))
                         res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
 
                     var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
-                    long priceR;
-                    if (_cat.VisualByName.TryGetValue(keyR, out priceR))
+                    if (_cat.VisualByName.TryGetValue(keyR, out var priceR))
                         res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
@@ -408,8 +398,7 @@ namespace _777bot
                 else
                     key = TextNorm.NormalizeKey(v.Name);
 
-                long namePrice;
-                if (_cat.VisualByName.TryGetValue(key, out namePrice))
+                if (_cat.VisualByName.TryGetValue(key, out var namePrice))
                     res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
                 else
                     res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{key}')");
@@ -450,8 +439,7 @@ namespace _777bot
                 var keyPrefix = type == SpecialColorType.Lights ? "kolor_swiatel:" : "kolor_licznika:";
                 var key = TextNorm.NormalizeKey(keyPrefix + name);
 
-                long p;
-                if (!_cat.VisualByName.TryGetValue(key, out p))
+                if (!_cat.VisualByName.TryGetValue(key, out var p))
                 {
                     res.MissingPrices.Add($"{(type == SpecialColorType.Lights ? "Kolor świateł" : "Kolor licznika")}: brak ceny dla '{name}' (klucz '{keyPrefix}{name}')");
                     return;
@@ -472,6 +460,36 @@ namespace _777bot
             foreach (var raw in card.MechanicalTuningRaw)
             {
                 var name = TextNorm.Normalize(raw);
+
+                // ✅ PRZECHWYT: Opony (...) są wrzucane jako WIZUALNE, nie mechaniczne
+                var tires = System.Text.RegularExpressions.Regex.Match(
+                    name,
+                    @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+                if (tires.Success)
+                {
+                    var v = TextNorm.NormalizeKey(tires.Groups["v"].Value);
+                    v = ToAsciiPl(v);
+
+                    if (v.Contains("sport")) v = "sportowe";
+                    else if (v.Contains("teren")) v = "terenowe";
+                    else if (v.Contains("drift")) v = "driftowe";
+
+                    var tireKey = TextNorm.NormalizeKey("opony:" + v);
+
+                    if (_cat.VisualByName.TryGetValue(tireKey, out var tireBase))
+                    {
+                        var tireMarket = (long)Math.Round(tireBase * 0.5);
+                        res.VisualItems.Add(($"Opony ({FirstUpper(v)})", tireBase, tireMarket));
+                    }
+                    else
+                    {
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla '{name}' (klucz '{tireKey}')");
+                    }
+
+                    continue; // nie licz tego jako mechaniczne
+                }
 
                 var key = TextNorm.NormalizeKey(name);
                 key = ToAsciiPl(key);
@@ -528,6 +546,13 @@ namespace _777bot
                     );
                 }
             }
+        }
+
+        private static string FirstUpper(string s)
+        {
+            if (string.IsNullOrWhiteSpace(s)) return s;
+            if (s.Length == 1) return s.ToUpperInvariant();
+            return char.ToUpperInvariant(s[0]) + s.Substring(1);
         }
 
         private static string NormalizeMechKey(string key)
@@ -609,28 +634,6 @@ namespace _777bot
                 else if (v.Contains("standard")) v = "standardowe";
 
                 mappedKey = "rozmiar_felg:" + v;
-                return true;
-            }
-
-            // ✅ Opony (Sportowe / Terenowe / Driftowe)
-            var tires = System.Text.RegularExpressions.Regex.Match(
-                s,
-                @"^Opony\s*\(\s*(?<v>.+?)\s*\)\s*$",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
-            if (tires.Success)
-            {
-                var v = TextNorm.NormalizeKey(tires.Groups["v"].Value);
-
-                // normalizacja polskich znaków (na wszelki wypadek)
-                v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
-                     .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
-
-                if (v.Contains("sport")) v = "sportowe";
-                else if (v.Contains("teren")) v = "terenowe";
-                else if (v.Contains("drift")) v = "driftowe";
-
-                mappedKey = "opony:" + v;
                 return true;
             }
 
