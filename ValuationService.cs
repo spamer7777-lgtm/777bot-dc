@@ -91,6 +91,8 @@ namespace _777bot
             ["cb radio"] = "cb-radio",
             ["gwint. zawieszenie"] = "gwintowane zawieszenie",
             ["gwintowane zawieszenie"] = "gwintowane zawieszenie",
+            ["moduł zmiany napędu"] = "modul zmiany napedu",
+            ["modul zmiany napedu"] = "modul zmiany napedu",
         };
 
         public ValuationService(PriceCatalog cat, VehicleMongoStore store)
@@ -218,9 +220,7 @@ namespace _777bot
         {
             foreach (var v in card.VisualTuning)
             {
-                // ======================
                 // 1) WIZUALNE PO ID
-                // ======================
                 if (v.Id != 0)
                 {
                     long idPrice;
@@ -228,15 +228,12 @@ namespace _777bot
                         res.VisualItems.Add(($"{v.Name} ({v.Id})", idPrice, (long)Math.Round(idPrice * 0.5)));
                     else
                         res.MissingPrices.Add($"Wizualne ID: brak ceny dla {v.Id} ({v.Name})");
-
                     continue;
                 }
 
-                // ======================
-                // 2) SPECJALNE: Poszerzenia (2,2) -> przód + tył
-                // ======================
                 var s = TextNorm.Normalize(v.Name);
 
+                // 2) Poszerzenia (2,2) -> przód + tył
                 var widen = System.Text.RegularExpressions.Regex.Match(
                     s,
                     @"^Poszerzenia\s*\(\s*(?<f>\d)\s*,\s*(?<r>\d)\s*\)\s*$",
@@ -248,40 +245,36 @@ namespace _777bot
                     var r = widen.Groups["r"].Value;
 
                     // przód
-                    var keyF = TextNorm.NormalizeKey("poszerzenia_przod:" + f);
-                    long priceF;
-                    if (_cat.VisualByName.TryGetValue(keyF, out priceF))
+                    if (TryGetVisualPriceFlexible("poszerzenia_przod:" + f, out var priceF))
                         res.VisualItems.Add(($"Poszerzenia przód ({f})", priceF, (long)Math.Round(priceF * 0.5)));
                     else
-                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz '{keyF}')");
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia przód ({f})' (klucz 'poszerzenia_przod:{f}')");
 
                     // tył
-                    var keyR = TextNorm.NormalizeKey("poszerzenia_tyl:" + r);
-                    long priceR;
-                    if (_cat.VisualByName.TryGetValue(keyR, out priceR))
+                    if (TryGetVisualPriceFlexible("poszerzenia_tyl:" + r, out var priceR))
                         res.VisualItems.Add(($"Poszerzenia tył ({r})", priceR, (long)Math.Round(priceR * 0.5)));
                     else
-                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz '{keyR}')");
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla 'Poszerzenia tył ({r})' (klucz 'poszerzenia_tyl:{r}')");
 
                     continue;
                 }
 
-                // ======================
-                // 3) POZOSTAŁE: nazwa / mapowanie (przyciemnienie, rozmiar felg)
-                // ======================
-                string mappedKey;
-                string key;
+                // 3) Przyciemnienie / Rozmiar felg / zwykłe nazwy
+                if (TryMapSpecialVisualName(v.Name, out var mappedKey))
+                {
+                    if (TryGetVisualPriceFlexible(mappedKey, out var specialPrice))
+                        res.VisualItems.Add((v.Name, specialPrice, (long)Math.Round(specialPrice * 0.5)));
+                    else
+                        res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{mappedKey}')");
 
-                if (TryMapSpecialVisualName(v.Name, out mappedKey))
-                    key = TextNorm.NormalizeKey(mappedKey);
-                else
-                    key = TextNorm.NormalizeKey(v.Name);
+                    continue;
+                }
 
-                long namePrice;
-                if (_cat.VisualByName.TryGetValue(key, out namePrice))
+                // zwykła nazwa
+                if (TryGetVisualPriceFlexible(v.Name, out var namePrice))
                     res.VisualItems.Add((v.Name, namePrice, (long)Math.Round(namePrice * 0.5)));
                 else
-                    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (klucz '{key}')");
+                    res.MissingPrices.Add($"Wizualne: brak ceny dla '{v.Name}' (visual_name_prices.csv)");
             }
 
             await AddColorAsync(res, SpecialColorType.Lights, card.LightsColorRaw);
@@ -295,7 +288,6 @@ namespace _777bot
             var parsed = VehicleCardParser.ParseColorWithRarity(raw);
             var name = parsed.name;
             var rarity = parsed.rarity;
-
             if (string.IsNullOrWhiteSpace(name)) return;
 
             var isLimitedOrUnique =
@@ -316,15 +308,16 @@ namespace _777bot
             }
             else
             {
+                // WAŻNE: szukamy elastycznie
                 var keyPrefix = type == SpecialColorType.Lights ? "kolor_swiatel:" : "kolor_licznika:";
-                var key = TextNorm.NormalizeKey(keyPrefix + name);
+                var fullKey = keyPrefix + name;
 
-                long p;
-                if (!_cat.VisualByName.TryGetValue(key, out p))
+                if (!TryGetVisualPriceFlexible(fullKey, out var p))
                 {
-                    res.MissingPrices.Add($"{(type == SpecialColorType.Lights ? "Kolor świateł" : "Kolor licznika")}: brak ceny dla '{name}' (klucz '{keyPrefix}{name}')");
+                    res.MissingPrices.Add($"{(type == SpecialColorType.Lights ? "Kolor świateł" : "Kolor licznika")}: brak ceny dla '{name}' (klucz '{fullKey}')");
                     return;
                 }
+
                 basePrice = p;
             }
 
@@ -343,16 +336,13 @@ namespace _777bot
                 var name = TextNorm.Normalize(raw);
                 var key = TextNorm.NormalizeKey(name);
 
-                string alias;
-                if (MechAliases.TryGetValue(key, out alias))
+                if (MechAliases.TryGetValue(key, out var alias))
                     key = TextNorm.NormalizeKey(alias);
 
                 key = NormalizeMechKey(key);
 
-                long basePrice;
-                if (_cat.MechByKey.TryGetValue(key, out basePrice))
+                if (_cat.MechByKey.TryGetValue(key, out var basePrice))
                 {
-                    // ✅ Zestawy i CFI liczymy 100%
                     var isFull =
                         key.StartsWith("c.f.i:", StringComparison.OrdinalIgnoreCase) ||
                         key.StartsWith("zestaw:", StringComparison.OrdinalIgnoreCase);
@@ -371,25 +361,52 @@ namespace _777bot
 
         private static string NormalizeMechKey(string key)
         {
+            // Powiększony bak (150l)
+            var tank = System.Text.RegularExpressions.Regex.Match(
+                key,
+                @"^powiekszony\s+bak\s*\(\s*(?<l>\d{2,3})\s*l\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (tank.Success)
+                return "bak_paliwa:" + tank.Groups["l"].Value + "l";
+
+            // Przeniesienie napędu (AWD/FWD/RWD)
+            var drive = System.Text.RegularExpressions.Regex.Match(
+                key,
+                @"^przeniesienie\s+napedu\s*\(\s*(?<v>awd|fwd|rwd)\s*\)\s*$",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (drive.Success)
+                return "zmiana_napedu:" + drive.Groups["v"].Value.ToLowerInvariant();
+
+            // Moduł zmiany napędu -> MZN
+            if (key.Equals("modul zmiany napedu", StringComparison.OrdinalIgnoreCase) ||
+                key.Equals("moduł zmiany napędu", StringComparison.OrdinalIgnoreCase))
+            {
+                return "zmiana_napedu:mzn";
+            }
+
             if (key.StartsWith("ecu", StringComparison.OrdinalIgnoreCase))
             {
                 var v = ExtractV(key);
                 return v != "" ? "ecu:" + v : "ecu";
             }
+
             if (key.StartsWith("turbo", StringComparison.OrdinalIgnoreCase))
             {
                 var v = ExtractV(key);
                 return v != "" ? "turbo:" + v : "turbo";
             }
+
             if (key.StartsWith("lpg", StringComparison.OrdinalIgnoreCase))
             {
                 var cap = ExtractLiters(key);
                 return cap != "" ? "lpg:" + cap : "lpg";
             }
+
             if (key.StartsWith("zestaw", StringComparison.OrdinalIgnoreCase))
             {
                 var kind = key.Replace("zestaw", "").Trim().Trim(':');
-
                 if (string.IsNullOrWhiteSpace(kind))
                     return "zestaw";
 
@@ -403,6 +420,7 @@ namespace _777bot
 
                 return "zestaw:" + TextNorm.NormalizeKey(k);
             }
+
             if (key.StartsWith("c.f.i", StringComparison.OrdinalIgnoreCase) || key.StartsWith("cfi", StringComparison.OrdinalIgnoreCase))
             {
                 var v = ExtractV(key);
@@ -412,7 +430,7 @@ namespace _777bot
             return key;
         }
 
-        // ======= VISUAL SPECIAL PARSING (Przyciemnienie / Rozmiar felg) =======
+        // Przyciemnienie / Rozmiar felg
         private static bool TryMapSpecialVisualName(string rawName, out string mappedKey)
         {
             mappedKey = "";
@@ -420,7 +438,6 @@ namespace _777bot
 
             var s = TextNorm.Normalize(rawName);
 
-            // Przyciemnienie szyb (70%)
             var tint = System.Text.RegularExpressions.Regex.Match(
                 s,
                 @"^Przyciemnienie\s+szyb\s*\(\s*(?<p>\d{1,3})\s*%\s*\)\s*$",
@@ -432,7 +449,6 @@ namespace _777bot
                 return true;
             }
 
-            // Rozmiar felg (Duże)
             var rimSize = System.Text.RegularExpressions.Regex.Match(
                 s,
                 @"^Rozmiar\s+felg\s*\(\s*(?<v>.+?)\s*\)\s*$",
@@ -442,7 +458,6 @@ namespace _777bot
             {
                 var v = TextNorm.NormalizeKey(rimSize.Groups["v"].Value);
 
-                // spolszczenia -> ascii (na wszelki wypadek)
                 v = v.Replace("ą", "a").Replace("ę", "e").Replace("ł", "l").Replace("ń", "n")
                      .Replace("ó", "o").Replace("ś", "s").Replace("ż", "z").Replace("ź", "z");
 
@@ -455,6 +470,31 @@ namespace _777bot
                 return true;
             }
 
+            return false;
+        }
+
+        // ======= KLUCZ: najważniejsze, żeby „poszerzenia_przod:2” trafiło niezależnie od normalizacji loadera =======
+        private bool TryGetVisualPriceFlexible(string keyOrName, out long price)
+        {
+            // 1) jak jest
+            if (_cat.VisualByName.TryGetValue(keyOrName, out price))
+                return true;
+
+            // 2) po NormalizeKey
+            var k1 = TextNorm.NormalizeKey(keyOrName);
+            if (_cat.VisualByName.TryGetValue(k1, out price))
+                return true;
+
+            // 3) czasem NormalizeKey zmienia '_' -> ' ' lub odwrotnie, więc spróbuj oba
+            var k2 = k1.Replace("_", " ");
+            if (_cat.VisualByName.TryGetValue(k2, out price))
+                return true;
+
+            var k3 = k1.Replace(" ", "_");
+            if (_cat.VisualByName.TryGetValue(k3, out price))
+                return true;
+
+            price = 0;
             return false;
         }
 
