@@ -99,6 +99,13 @@ namespace _777bot
     ["moduł zmiany napędu"] = "zmiana_napedu:mzn",
     ["modul zmiany napedu"] = "zmiana_napedu:mzn",
     ["mzn"] = "zmiana_napedu:mzn",
+    // ===== SYSTEM ABS =====
+    ["system abs"] = "system_abs",
+    ["abs"] = "system_abs",
+    // ===== GWINT =====
+    ["gwint. zawieszenie"] = "gwintowane_zawieszenie",
+    ["gwint zawieszenie"] = "gwintowane_zawieszenie",
+    ["gwintowane zawieszenie"] = "gwintowane_zawieszenie",      
         };
 
         public ValuationService(PriceCatalog cat, VehicleMongoStore store)
