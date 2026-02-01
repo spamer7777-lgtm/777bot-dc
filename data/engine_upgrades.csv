@@ -327,6 +327,10 @@ Sentinel,Sentinel Kombi,2.3,2.5,16000
 Sentinel,Sentinel Kombi,2.5,2.7,18000
 Sentinel,Sentinel Kombi,2.7,2.9,20000
 Sentinel,Sentinel Kombi,2.9,3.1,22000
+Sentinel,2.3,2.5,16000
+Sentinel,2.5,2.7,18000
+Sentinel,2.7,2.9,20000
+Sentinel,2.9,3.1,22000
 Slamvan,4.8,5.2,48000
 Slamvan,5.2,5.6,54000
 Slamvan,5.6,6.0,58000
